@@ -44,7 +44,6 @@ if not check_password():
 # ==========================================
 # 2. OPENAI KLIENT INITIALISERING
 # ==========================================
-# Henter API-nøglen automatisk fra Streamlit Secrets
 try:
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 except Exception:
@@ -59,9 +58,9 @@ st.caption("ℹ️ *Bemærk: Filer og data bruges udelukkende til den aktuelle s
 st.markdown("---")
 
 # Generel Dokumenthåndtering til sammenligning
-st.markdown("### 📂 Dokumenthåndtering til sammenligning")
+st.markdown("### 📂 Generel Dokumenthåndtering (Tilbud, Kontrakter, Certifikater)")
 uploadede_filer = st.file_uploader(
-    "Upload tilbud, kontrakter eller bilag til gennemsyn (PDF)", 
+    "Upload tilbud, kontrakter eller bilag til gennemsyn (Flere PDF-filer muligt)", 
     type=["pdf"],
     accept_multiple_files=True,
     help="Upload filer her. Systemet læser leverandørnavn og sletter filerne, når du lukker/opdaterer appen."
@@ -71,7 +70,7 @@ udlaest_leverandoer = ""
 samlet_pdf_tekst = ""
 
 if uploadede_filer:
-    st.info(f"📁 {len(uploadede_filer)} dokument(er) midlertidigt tilknyttet til sammenligning.")
+    st.info(f"📁 {len(uploadede_filer)} generelle dokument(er) tilknyttet.")
     
     with st.spinner("Analyserer dokumenter..."):
         for fil in uploadede_filer:
@@ -79,7 +78,7 @@ if uploadede_filer:
                 with pdfplumber.open(fil) as pdf:
                     for page in pdf.pages:
                         tekst = page.extract_text() or ""
-                        samlet_pdf_tekst += f"\n--- Start på side/dokument ({fil.name}) ---\n" + tekst
+                        samlet_pdf_tekst += f"\n--- Generelt dokument ({fil.name}) ---\n" + tekst
                 
                 if not udlaest_leverandoer:
                     match = re.search(r"(?:Leverandør|Exporter|Producent|Supplier):\s*(.+)", samlet_pdf_tekst, re.IGNORECASE)
@@ -120,13 +119,13 @@ with tab1:
             ["Pomfritter (Fries)", "Kød (Meat)", "Olivenolie (Olive Oil)", "Tomat på dåse (Canned Tomatoes)", "Andet"]
         )
 
-    st.info("💡 Data herfra bruges direkte i næste fane til sammenligning mod pro-forma.")
+    st.info("💡 Data herfra bruges direkte i næste fane til sammenligning mod pro-forma og havnekrav.")
 
 # ------------------------------------------
 # FANE 2: PRO-FORMA SAMMENLIGNING (AI INTEGRATION)
 # ------------------------------------------
 with tab2:
-    st.header("Sammenligning af Pro-forma mod Tilbud")
+    st.header("Sammenligning af Pro-forma mod Tilbud & Havnekrav")
     st.write("Hold pro-forma oplysningerne op imod den indgåede aftale og brasilianske toldkrav ved hjælp af AI.")
     
     col1, col2 = st.columns(2)
@@ -142,13 +141,12 @@ with tab2:
         proforma_beloeb = st.number_input("Pro-forma Beløb (EUR/USD)", min_value=0.0, step=100.0)
 
     proforma_filer = st.file_uploader(
-        "Upload specifik pro-forma faktura til sammenligning", 
+        "Upload specifik pro-forma faktura (Flere PDF'er muligt)", 
         type=["pdf"], 
         accept_multiple_files=True,
         key="proforma_docs"
     )
 
-    # Læs eventuel tekst fra specifikke proforma filer
     proforma_tekst = ""
     if proforma_filer:
         for p_fil in proforma_filer:
@@ -159,65 +157,17 @@ with tab2:
             except Exception:
                 pass
 
-    st.markdown("---")
-
-    # KNAP TIL AT KØRE OPENAI SAMMENLIGNINGEN
-    if st.button("🔍 Udfør AI-Sammenligning", type="primary"):
-        kombineret_tekst = samlet_pdf_tekst + "\n" + proforma_tekst
-
-        if not kombineret_tekst.strip():
-            st.warning("⚠️ Upload venligst mindst ét PDF-dokument før du kører AI-sammenligningen.")
-        else:
-            with st.spinner("🤖 AI'en analyserer dokumenterne, sammenligner priser og tjekker brasilianske toldkrav..."):
-                try:
-                    prompt = f"""
-Du er en ekspert i brasiliansk importkontrol og logistik med særligt kendskab til ankomst i Pecém, Brasilien.
-
-Dine opgaver:
-1. Sammenlign oplysningerne fra tilbud/kontrakt mod pro-forma fakturaen.
-2. Tjek for afvigelser i:
-   - Leverandørnavn
-   - Priser, samlet beløb og valuta (Indtastet pro-forma beløb i app: {proforma_beloeb})
-   - Varebeskrivelse, mængder og vægt
-   - Betalings- og leveringsbetingelser (Incoterms som FOB/CIF)
-3. TJEK MOD BRASILIANSKE IMPORTKRAV (Receita Federal / Pecém):
-   - Er der angivet en 8-cifret NCM-kode (HS-kode) for varerne?
-   - Fremgår importørens CNPJ-nummer eller skatte-ID i dokumentet?
-   - Kræver varetypen ({vare_type}) særlige certifikater (f.eks. MAPA sundhedscertifikat for kød/fødevarer eller ANVISA godkendelse)?
-
-Angiv resultatet kort, overskueligt og opdelt i punkter på dansk. Fremhæv eventuelle mangler, afvigelser eller advarsler med ⚠️.
-
-Dokumenttekst til analyse:
-{kombineret_tekst}
-"""
-                    response = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": "Du er en skarp assistent til importkontrol og brasiliansk logistik."},
-                            {"role": "user", "content": prompt}
-                        ],
-                        temperature=0.2
-                    )
-
-                    st.markdown("### 🤖 AI Sammenligningsrapport")
-                    st.success("Analysen er gennemført!")
-                    st.write(response.choices[0].message.content)
-
-                except Exception as e:
-                    st.error(f"⚠️ Der opstod en fejl under AI-sammenligningen: {e}")
-
 # ------------------------------------------
 # FANE 3: HAVNE & LOGISTIK
 # ------------------------------------------
 with tab3:
     st.header("Havne & Logistisk Verifikation")
-    st.write("Tjek at afgangshavn og ankomsthavn stemmer overens med logistikaftalen.")
+    st.write("Tjek at afgangshavn, ankomsthavn og havnedokumenter stemmer overens med importkravene.")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. Santos, Brasilien eller Rotterdam")
-        # Pecém sat som fast standard
+        havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. Rotterdam, Santos osv.")
         havn_ankomst = st.text_input("Ankomsthavn (POD)", value="Pecém, Nordøst-Brasilien")
         
     with col2:
@@ -225,12 +175,69 @@ with tab3:
         eta = st.date_input("Forventet Ankomstdato (ETA)")
 
     logistik_filer = st.file_uploader(
-        "Upload logistikdokumenter til verifikation (f.eks. Bill of Lading)", 
-        type=["pdf", "png", "jpg"], 
+        "Upload havne- og logistikdokumenter (Bill of Lading, Pakkeliste, MAPA certifikat osv. - Flere PDF'er muligt)", 
+        type=["pdf"], 
         accept_multiple_files=True,
         key="logistik_docs"
     )
 
-    st.markdown("---")
-    if st.button("🚢 Godkend Havne- og Logistikdata", type="primary"):
-        st.success(f"Logistik verificeret. Rute: {havn_afgang if havn_afgang else 'Ikke angivet'} ➔ **{havn_ankomst}**.")
+    logistik_tekst = ""
+    if logistik_filer:
+        for l_fil in logistik_filer:
+            try:
+                with pdfplumber.open(l_fil) as pdf:
+                    for page in pdf.pages:
+                        logistik_tekst += f"\n--- Logistik/Havnedokument ({l_fil.name}) ---\n" + (page.extract_text() or "")
+            except Exception:
+                pass
+
+# ==========================================
+# 4. SAMLET AI-ANALYSE PÅ TVÆRS AF ALLE DOKUMENTER
+# ==========================================
+st.markdown("---")
+st.subheader("🔍 Samlet AI-Import- & Havnekontrol")
+st.write("Kør en komplet AI-analyse på tværs af **alle** uploadede dokumenter (tilbud, pro-forma samt havne/logistikpapirer).")
+
+if st.button("🚀 Kør AI Sammenligning & Havnekontrol", type="primary", use_container_width=True):
+    kombineret_tekst = samlet_pdf_tekst + "\n" + proforma_tekst + "\n" + logistik_tekst
+
+    if not kombineret_tekst.strip():
+        st.warning("⚠️ Upload venligst mindst ét PDF-dokument før du kører AI-sammenligningen.")
+    else:
+        with st.spinner("🤖 AI'en analyserer samtlige dokumenter og kontrollerer mod brasilianske havnekrav..."):
+            try:
+                prompt = f"""
+Du er en ekspert i brasiliansk importkontrol, tolddeklarering og logistik med særligt kendskab til ankomst i Pecém, Brasilien.
+
+Dine opgaver:
+1. SAMMENLIGNING AF DOKUMENTER:
+   - Sammenlign oplysningerne fra tilbud/kontrakt, pro-forma faktura og logistikdokumenter (f.eks. Bill of Lading / B/L, pakkeliste).
+   - Tjek for afvigelser i leverandørnavn, priser, beløb (Angivet pro-forma beløb: {proforma_beloeb}), mængder, vægt og Incoterms.
+
+2. TJEK AF HAVNE- OG TOLD-DOKUMENTKRAV (Pecém / Receita Federal):
+   - **Bill of Lading (B/L):** Er havne korrekt angivet? (POL: {havn_afgang if havn_afgang else 'Tjek dokument'}, POD: {havn_ankomst})
+   - **NCM / HS-koder:** Fremgår den 8-cifrede NCM-kode for varerne?
+   - **Skatte-ID / CNPJ:** Fremgår importørens CNPJ-nummer på dokumenterne?
+   - **Særlige certifikater:** Kræver varetypen '{vare_type}' særlige certifikater (f.eks. MAPA sundhedscertifikat for kød/fødevarer eller ANVISA godkendelse)? Er de til stede i de uploadede papirer?
+
+Opstil resultatet kort, overskueligt og opdelt i klare punkter på dansk. 
+Brug ⚠️ til at fremhæve eventuelle mangler, afvigelser eller kritiske fejl i havnedokumenterne.
+
+Dokumenttekst til samlet analyse:
+{kombineret_tekst}
+"""
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "Du er en skarp assistent til importkontrol og brasiliansk logistik."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0.2
+                )
+
+                st.markdown("### 🤖 AI Import- & Havnerapport")
+                st.success("Analysen er gennemført!")
+                st.write(response.choices[0].message.content)
+
+            except Exception as e:
+                st.error(f"⚠️ Der opstod en fejl under AI-sammenligningen: {e}")
