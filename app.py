@@ -1,5 +1,10 @@
 import streamlit as st
 import pdfplumber
+import docx
+import openpyxl
+import easyocr
+from PIL import Image
+import io
 import re
 import json
 from openai import OpenAI
@@ -10,6 +15,11 @@ st.set_page_config(
     page_icon="🇧🇷", 
     layout="wide"
 )
+
+# Initialiser EasyOCR til billeder (Dansk, Engelsk, Portugisisk, Spansk)
+@st.cache_resource
+def get_ocr_reader():
+    return easyocr.Reader(['en', 'da', 'pt', 'es'])
 
 # ==========================================
 # 1. ADGANGSKODE BESKYTTELSE
@@ -43,7 +53,65 @@ if not check_password():
 
 
 # ==========================================
-# 2. OPENAI KLIENT INITIALISERING
+# 2. UNIVERSEL TEKSTUDTRÆKNING
+# ==========================================
+ACCEPTED_TYPES = ["pdf", "docx", "xlsx", "txt", "png", "jpg", "jpeg"]
+
+def udtraek_tekst_fra_fil(fil):
+    """Udtrækker tekst fra PDF, Word, Excel, Tekst og Billeder (OCR)."""
+    tekst = ""
+    fil_navn = fil.name
+    fil_ext = fil_navn.split(".")[-1].lower()
+
+    try:
+        # 1. PDF
+        if fil_ext == "pdf":
+            with pdfplumber.open(fil) as pdf:
+                for page in pdf.pages:
+                    tekst += (page.extract_text() or "") + "\n"
+
+        # 2. Word (.docx)
+        elif fil_ext == "docx":
+            doc = docx.Document(fil)
+            for p in doc.paragraphs:
+                tekst += p.text + "\n"
+            for table in doc.tables:
+                for row in table.rows:
+                    row_text = [cell.text.strip() for cell in row.cells]
+                    tekst += " | ".join(row_text) + "\n"
+
+        # 3. Excel (.xlsx)
+        elif fil_ext == "xlsx":
+            wb = openpyxl.load_workbook(fil, data_only=True)
+            for sheet in wb.sheetnames:
+                ws = wb[sheet]
+                tekst += f"\n--- Ark: {sheet} ---\n"
+                for row in ws.iter_rows(values_only=True):
+                    row_vals = [str(val) if val is not None else "" for val in row]
+                    if any(row_vals):
+                        tekst += " | ".join(row_vals) + "\n"
+
+        # 4. Tekstfiler (.txt)
+        elif fil_ext == "txt":
+            tekst = fil.read().decode("utf-8", errors="ignore")
+
+        # 5. Billeder (PNG, JPG, JPEG via OCR)
+        elif fil_ext in ["png", "jpg", "jpeg"]:
+            image = Image.open(fil)
+            reader = get_ocr_reader()
+            image_bytes = io.BytesIO()
+            image.save(image_bytes, format=image.format or 'PNG')
+            ocr_result = reader.readtext(image_bytes.getvalue(), detail=0)
+            tekst = "\n".join(ocr_result)
+
+    except Exception as e:
+        st.warning(f"⚠️ Kunne ikke udtrække fuld tekst fra '{fil_navn}': {e}")
+
+    return tekst
+
+
+# ==========================================
+# 3. OPENAI KLIENT INITIALISERING
 # ==========================================
 try:
     client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
@@ -52,48 +120,57 @@ except Exception:
 
 
 # ==========================================
-# 3. HOVEDAPPLIKATION (SAMMENLIGNING)
+# 4. HOVEDAPPLIKATION
 # ==========================================
 st.title("🇧🇷 Import & Sammenligningsværktøj")
-st.caption("ℹ️ *Bemærk: Filer og data bruges udelukkende til den aktuelle sammenligning og gemmes ikke permanent.*")
+st.caption("ℹ️ *Bemærk: Filer og tekst bruges udelukkende til den aktuelle sammenligning og gemmes ikke permanent.*")
 st.markdown("---")
 
-# Generel Dokumenthåndtering til sammenligning
-st.markdown("### 📂 Generel Dokumenthåndtering (Tilbud, Kontrakter, Certifikater)")
-uploadede_filer = st.file_uploader(
-    "Upload tilbud, kontrakter eller bilag til gennemsyn (Flere PDF-filer muligt)", 
-    type=["pdf"],
-    accept_multiple_files=True,
-    help="Upload filer her. Systemet læser leverandørnavn og sletter filerne, når du lukker/opdaterer appen."
-)
+# Generel Dokumenthåndtering & Mail/Chat-input
+st.markdown("### 📂 Dokumenter & Korrespondance")
+
+col_upload, col_text = st.columns([1, 1])
+
+with col_upload:
+    uploadede_filer = st.file_uploader(
+        "Upload tilbud, kontrakter, bilag eller screenshots (PDF, Word, Excel, TXT, PNG, JPG)", 
+        type=ACCEPTED_TYPES,
+        accept_multiple_files=True,
+        help="Upload filer her. Systemet læser leverandørnavn og sletter filerne ved genstart."
+    )
+
+with col_text:
+    mail_og_chat_tekst = st.text_area(
+        "💬 Kopiér & indsæt tekst fra e-mails, WhatsApp eller chat her (Valgfrit):",
+        placeholder="Eksempel:\n'Leverandør har bekræftet på WhatsApp i dag, at prisen er $1.05/kg og at de dækker fragten til Pecém...'",
+        height=135
+    )
 
 udlaest_leverandoer = ""
 samlet_pdf_tekst = ""
+
+if mail_og_chat_tekst.strip():
+    samlet_pdf_tekst += f"\n--- Indsat Mail / Chat Korrespondance ---\n{mail_og_chat_tekst}\n"
 
 if uploadede_filer:
     st.info(f"📁 {len(uploadede_filer)} generelle dokument(er) tilknyttet.")
     
     with st.spinner("Analyserer dokumenter..."):
         for fil in uploadede_filer:
-            try:
-                with pdfplumber.open(fil) as pdf:
-                    for page in pdf.pages:
-                        tekst = page.extract_text() or ""
-                        samlet_pdf_tekst += f"\n--- Generelt dokument ({fil.name}) ---\n" + tekst
-                
-                if not udlaest_leverandoer:
-                    match = re.search(r"(?:Leverandør|Exporter|Producent|Supplier):\s*(.+)", samlet_pdf_tekst, re.IGNORECASE)
-                    if match:
-                        udlaest_leverandoer = match.group(1).strip()
-            except Exception:
-                pass
+            udtrukket = udtraek_tekst_fra_fil(fil)
+            samlet_pdf_tekst += f"\n--- Dokument ({fil.name}) ---\n" + udtrukket
+            
+            if not udlaest_leverandoer:
+                match = re.search(r"(?:Leverandør|Exporter|Producent|Supplier):\s*(.+)", udtrukket, re.IGNORECASE)
+                if match:
+                    udlaest_leverandoer = match.group(1).strip()
                 
     if udlaest_leverandoer:
         st.success(f"Fandt leverandør automatisk: **{udlaest_leverandoer}**")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-# Opdeling i 3 overskuelige faner
+# Opdeling i 3 faner
 tab1, tab2, tab3 = st.tabs([
     "1️⃣ Tilbud & Aktiv Aftale", 
     "2️⃣ Pro-forma Sammenligning", 
@@ -120,14 +197,14 @@ with tab1:
             ["Pomfritter (Fries)", "Kød (Meat)", "Olivenolie (Olive Oil)", "Tomat på dåse (Canned Tomatoes)", "Andet"]
         )
 
-    st.info("💡 Data herfra bruges direkte i sammenligningen mod pro-forma og havnekrav.")
+    st.info("💡 Data herfra bruges direkte i sammenligningen mod pro-forma, e-mails og havnekrav.")
 
 # ------------------------------------------
 # FANE 2: PRO-FORMA SAMMENLIGNING
 # ------------------------------------------
 with tab2:
     st.header("Sammenligning af Pro-forma mod Tilbud & Havnekrav")
-    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale og brasilianske toldkrav.")
+    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale, e-mails og brasilianske toldkrav.")
     
     col1, col2 = st.columns(2)
     
@@ -142,8 +219,8 @@ with tab2:
         proforma_beloeb = st.number_input("Pro-forma Beløb (EUR/USD)", min_value=0.0, step=100.0)
 
     proforma_filer = st.file_uploader(
-        "Upload specifik pro-forma faktura (Flere PDF'er muligt)", 
-        type=["pdf"], 
+        "Upload specifik pro-forma faktura (PDF, Word, Excel, Billeder m.m.)", 
+        type=ACCEPTED_TYPES, 
         accept_multiple_files=True,
         key="proforma_docs"
     )
@@ -151,12 +228,7 @@ with tab2:
     proforma_tekst = ""
     if proforma_filer:
         for p_fil in proforma_filer:
-            try:
-                with pdfplumber.open(p_fil) as pdf:
-                    for page in pdf.pages:
-                        proforma_tekst += f"\n--- Pro-forma ({p_fil.name}) ---\n" + (page.extract_text() or "")
-            except Exception:
-                pass
+            proforma_tekst += f"\n--- Pro-forma ({p_fil.name}) ---\n" + udtraek_tekst_fra_fil(p_fil)
 
 # ------------------------------------------
 # FANE 3: HAVNE & LOGISTIK
@@ -176,8 +248,8 @@ with tab3:
         eta = st.date_input("Forventet Ankomstdato (ETA)")
 
     logistik_filer = st.file_uploader(
-        "Upload havne- og logistikdokumenter (Bill of Lading, Pakkeliste, MAPA certifikat osv.)", 
-        type=["pdf"], 
+        "Upload havne- og logistikdokumenter (Bill of Lading, Pakkeliste, MAPA certifikat, Billeder osv.)", 
+        type=ACCEPTED_TYPES, 
         accept_multiple_files=True,
         key="logistik_docs"
     )
@@ -185,20 +257,14 @@ with tab3:
     logistik_tekst = ""
     if logistik_filer:
         for l_fil in logistik_filer:
-            try:
-                with pdfplumber.open(l_fil) as pdf:
-                    for page in pdf.pages:
-                        logistik_tekst += f"\n--- Logistik/Havnedokument ({l_fil.name}) ---\n" + (page.extract_text() or "")
-            except Exception:
-                pass
+            logistik_tekst += f"\n--- Logistik/Havnedokument ({l_fil.name}) ---\n" + udtraek_tekst_fra_fil(l_fil)
 
 # ==========================================
-# 4. STRUKTURERET AI-ANALYSE, OPFØLGNING OG VISNING
+# 5. STRUKTURERET AI-ANALYSE OG CHAT
 # ==========================================
 st.markdown("---")
 st.subheader("🔍 AI-Import- & Havnekontrol")
 
-# Hjælpefunktion til at køre OpenAI analysen
 def koer_ai_analyse(prompt_tekst):
     return client.chat.completions.create(
         model="gpt-4o-mini",
@@ -210,21 +276,20 @@ def koer_ai_analyse(prompt_tekst):
         temperature=0.1
     )
 
-# Knap til at køre den første overordnede analyse
 if st.button("🚀 Kør AI Sammenligning & Havnekontrol", type="primary", use_container_width=True):
     kombineret_tekst = samlet_pdf_tekst + "\n" + proforma_tekst + "\n" + logistik_tekst
 
     if not kombineret_tekst.strip():
-        st.warning("⚠️ Upload venligst mindst ét PDF-dokument før du kører AI-sammenligningen.")
+        st.warning("⚠️ Upload venligst mindst ét dokument/billede eller indsæt e-mail/chattekst før du kører AI-sammenligningen.")
     else:
-        with st.spinner("🤖 AI'en analyserer dokumenterne og opstiller resultatet..."):
+        with st.spinner("🤖 AI'en analyserer dokumenter, e-mails og billeder..."):
             try:
                 st.session_state["kombineret_tekst"] = kombineret_tekst
-                st.session_state["chat_historik"] = [] # Nulstil opfølgende chat
+                st.session_state["chat_historik"] = []
                 
                 start_prompt = f"""
 Du er en ekspert i brasiliansk importkontrol og logistik i Pecém.
-Du skal analysere de uploadede dokumenter og returnere et svar I KORREKT JSON-FORMAT:
+Du skal analysere de uploadede dokumenter, e-mail/chat-korrespondance og bilag og returnere et svar I KORREKT JSON-FORMAT:
 
 {{
   "status_godkendt": true eller false,
@@ -244,7 +309,7 @@ Varetype: {vare_type}
 Angivet Pro-forma Beløb: {proforma_beloeb}
 Ankomsthavn: {havn_ankomst}
 
-Dokumenttekst:
+Samlet tekst (inkl. dokumenter, e-mails og beskeder):
 {kombineret_tekst}
 """
                 response = koer_ai_analyse(start_prompt)
@@ -253,13 +318,12 @@ Dokumenttekst:
             except Exception as e:
                 st.error(f"⚠️ Der opstod en fejl under AI-sammenligningen: {e}")
 
-# Hvis der findes et analyseresultat i Session State, vises det her
+# Vis resultater
 if "analyse_resultat" in st.session_state:
     resultat = st.session_state["analyse_resultat"]
 
     st.markdown("## 📊 Analyseresultat")
     
-    # 1. Samlet Statusindikator
     if resultat.get("status_godkendt", False):
         st.success(f"🟢 **GODKENDT:** {resultat.get('sammenfatning')}")
     else:
@@ -268,7 +332,6 @@ if "analyse_resultat" in st.session_state:
     st.markdown("<br>", unsafe_allow_html=True)
     col_res1, col_res2 = st.columns(2)
 
-    # 2. Godkendte Punkter
     with col_res1:
         st.markdown("### ✅ Godkendte Punkter")
         godkendte = resultat.get("godkendte_punkter", [])
@@ -278,7 +341,6 @@ if "analyse_resultat" in st.session_state:
         else:
             st.write("Ingen registrerede godkendte punkter.")
 
-    # 3. Mangler & Advarsler
     with col_res2:
         st.markdown("### ⚠️ Mangler & Tjekpunkter")
         mangler = resultat.get("mangler_og_advarsler", [])
@@ -288,7 +350,6 @@ if "analyse_resultat" in st.session_state:
         else:
             st.write("Ingen mangler fundet.")
 
-    # 4. Detaljerede afvigelser
     afvigelser = resultat.get("afvigelser", [])
     if afvigelser:
         st.markdown("---")
@@ -301,23 +362,18 @@ if "analyse_resultat" in st.session_state:
             else:
                 st.info(f"**[{kat}]** {besk}")
 
-    # ==========================================
-    # 5. OPFØLGENDE CHAT OG DYNAMISK OPDATERING
-    # ==========================================
+    # Opfølgende Chat
     st.markdown("---")
     st.subheader("💬 Spørg eller opdater analysen")
     st.caption("Skriv spørgsmål til analysen eller tilføj oplysninger (f.eks. 'CNPJ nummeret er 12.345.678/0001-90, opdater analysen').")
 
-    # Vis tidligere chat-beskeder
     for besk in st.session_state.get("chat_historik", []):
         with st.chat_message(besk["role"]):
             st.write(besk["content"])
 
-    # Chat felt til brugeren
     bruger_input = st.chat_input("Skriv spørgsmål eller yderligere oplysninger her...")
 
     if bruger_input:
-        # Tilføj brugerens besked til historik
         if "chat_historik" not in st.session_state:
             st.session_state["chat_historik"] = []
         
@@ -333,19 +389,14 @@ Brugeren har givet følgende yderligere oplysninger eller spørgsmål:
 "{bruger_input}"
 
 Opdater hele JSON-strukturen ud fra den nye information. 
-Hvis brugeren f.eks. har oplyst et manglende CNPJ-nummer, skal advarslen fjernes fra 'mangler_og_advarsler' og tilføjes til 'godkendte_punkter'.
-
-Dokumenttekst:
-{st.session_state.get('kombineret_tekst', '')}
-
 Returner KUN den opdaterede JSON-struktur.
+
+Samlet tekst:
+{st.session_state.get('kombineret_tekst', '')}
 """
                 response = koer_ai_analyse(opdateret_prompt)
                 st.session_state["analyse_resultat"] = json.loads(response.choices[0].message.content)
-                
-                # Tilføj bekræftelse til chat
-                st.session_state["chat_historik"].append({"role": "assistant", "content": f"Analysen er opdateret på baggrund af din besked: '{bruger_input}'"})
-                
+                st.session_state["chat_historik"].append({"role": "assistant", "content": f"Analysen er opdateret ud fra din besked: '{bruger_input}'"})
                 st.rerun()
 
             except Exception as e:
