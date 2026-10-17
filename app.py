@@ -22,23 +22,55 @@ def get_ocr_reader():
     return easyocr.Reader(['en', 'da', 'pt', 'es'])
 
 # ==========================================
-# 1. ADGANGSKODE BESKYTTELSE
+# 1. ADGANGSKODE BESKYTTELSE & VELKOMST
 # ==========================================
 def check_password():
-    """Returnerer True hvis brugeren har indtastet den korrekte kode."""
+    """Viser en introduktion og adgangskodefelt hvis brugeren ikke er logget ind."""
     KORREKT_KODE = "brasilien2026"
 
     if st.session_state.get("password_correct", False):
         return True
 
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # Centreret layout til login- og velkomstskærm
+    col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
-        st.markdown("## 🔒 Log ind på Import-kontrol")
-        st.write("Indtast venligst adgangskoden for at fortsætte.")
+        st.markdown("# 🇧🇷 Import- & Sammenligningskontrol")
+        st.caption("Verifikationsværktøj til fødevareimport med ankomst i Pecém, Nordøst-Brasilien")
+        st.markdown("---")
+
+        # INTRODUKTION: Hvad kan appen hjælpe med?
+        st.markdown("### 💡 Hvad kan appen hjælpe dig med?")
+        st.markdown("""
+Appen fungerer som et **intelligent sammenligningsværktøj**, der sikrer dine importdokumenter mod dyre fejl, prisafvigelser og forsinkelser i tolden.
+
+* 🔍 **Dokumentsammenligning:** Hold tilbud, pro-forma fakturaer, pakkelister og kontrakter op mod hinanden.
+* 🇧🇷 **Told- & Havnekontrol (Pecém):** Tjek automatisk for lovpligtige brasilianske importkrav:
+  * 8-cifrede **NCM-koder** (Mercosur HS-koder)
+  * Modtagerens skatte-ID (**CNPJ-nummer**) på faktura og Bill of Lading
+  * Påkrævede fødevarecertifikater (**MAPA / ANVISA**) ud fra varetype
+* 💬 **Multiformat & Chat:** Læser **PDF, Word, Excel, billeder/screenshots (OCR) og e-mails/WhatsApp-tekst**. Bagefter kan du stille spørgsmål eller opdatere analysen direkte i en chat.
+* 🔒 **Sikker & Fortrolig:** Ingen dokumenter gemmes permanent. Alt slettes automatisk fra hukommelsen, når du lukker siden.
+""")
+
+        st.markdown("---")
+
+        # INSTRUKTIONER: Hvordan bruges appen?
+        st.markdown("### 📋 Sådan bruger du appen:")
+        st.markdown("""
+1. **Log ind:** Indtast adgangskoden herunder for at åbne værktøjet.
+2. **Upload eller Indsæt:** Upload relevante dokumenter (eller klistr e-mails/WhatsApp-aftaler ind).
+3. **Udfyld Stamdata:** Tjek varetype og havneoplysninger under fanerne.
+4. **Kør AI-Analyse:** Tryk på knappen og modtag et farvekodet og struktureret resultat.
+5. **Opfølgning:** Brug chatten i bunden til at stille spørgsmål eller rette oplysninger.
+""")
+
+        st.markdown("---")
+
+        # LOGIN-FORMULAR
+        st.markdown("### 🔒 Log ind")
+        password_input = st.text_input("Indtast adgangskode", type="password", help="Indtast adgangskoden for at få adgang.")
         
-        password_input = st.text_input("Adgangskode", type="password")
-        
-        if st.button("Log ind", use_container_width=True):
+        if st.button("🚀 Åbn Importkontrol", type="primary", use_container_width=True):
             if password_input == KORREKT_KODE:
                 st.session_state["password_correct"] = True
                 st.rerun()
