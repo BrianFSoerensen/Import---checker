@@ -1,6 +1,7 @@
 import streamlit as st
 import pdfplumber
 import re
+import json
 from openai import OpenAI
 
 # Sæt sideopsætning
@@ -119,14 +120,14 @@ with tab1:
             ["Pomfritter (Fries)", "Kød (Meat)", "Olivenolie (Olive Oil)", "Tomat på dåse (Canned Tomatoes)", "Andet"]
         )
 
-    st.info("💡 Data herfra bruges direkte i næste fane til sammenligning mod pro-forma og havnekrav.")
+    st.info("💡 Data herfra bruges direkte i sammenligningen mod pro-forma og havnekrav.")
 
 # ------------------------------------------
-# FANE 2: PRO-FORMA SAMMENLIGNING (AI INTEGRATION)
+# FANE 2: PRO-FORMA SAMMENLIGNING
 # ------------------------------------------
 with tab2:
     st.header("Sammenligning af Pro-forma mod Tilbud & Havnekrav")
-    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale og brasilianske toldkrav ved hjælp af AI.")
+    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale og brasilianske toldkrav.")
     
     col1, col2 = st.columns(2)
     
@@ -175,7 +176,7 @@ with tab3:
         eta = st.date_input("Forventet Ankomstdato (ETA)")
 
     logistik_filer = st.file_uploader(
-        "Upload havne- og logistikdokumenter (Bill of Lading, Pakkeliste, MAPA certifikat osv. - Flere PDF'er muligt)", 
+        "Upload havne- og logistikdokumenter (Bill of Lading, Pakkeliste, MAPA certifikat osv.)", 
         type=["pdf"], 
         accept_multiple_files=True,
         key="logistik_docs"
@@ -192,11 +193,10 @@ with tab3:
                 pass
 
 # ==========================================
-# 4. SAMLET AI-ANALYSE PÅ TVÆRS AF ALLE DOKUMENTER
+# 4. STRUKTURERET AI-ANALYSE OG VISNING
 # ==========================================
 st.markdown("---")
-st.subheader("🔍 Samlet AI-Import- & Havnekontrol")
-st.write("Kør en komplet AI-analyse på tværs af **alle** uploadede dokumenter (tilbud, pro-forma samt havne/logistikpapirer).")
+st.subheader("🔍 AI-Import- & Havnekontrol")
 
 if st.button("🚀 Kør AI Sammenligning & Havnekontrol", type="primary", use_container_width=True):
     kombineret_tekst = samlet_pdf_tekst + "\n" + proforma_tekst + "\n" + logistik_tekst
@@ -204,40 +204,93 @@ if st.button("🚀 Kør AI Sammenligning & Havnekontrol", type="primary", use_co
     if not kombineret_tekst.strip():
         st.warning("⚠️ Upload venligst mindst ét PDF-dokument før du kører AI-sammenligningen.")
     else:
-        with st.spinner("🤖 AI'en analyserer samtlige dokumenter og kontrollerer mod brasilianske havnekrav..."):
+        with st.spinner("🤖 AI'en analyserer dokumenterne og opstiller resultatet struktureret..."):
             try:
                 prompt = f"""
-Du er en ekspert i brasiliansk importkontrol, tolddeklarering og logistik med særligt kendskab til ankomst i Pecém, Brasilien.
+Du er en ekspert i brasiliansk importkontrol og logistik i Pecém.
+Du skal analysere de uploadede dokumenter og returnere et svar I KORREKT JSON-FORMAT.
 
-Dine opgaver:
-1. SAMMENLIGNING AF DOKUMENTER:
-   - Sammenlign oplysningerne fra tilbud/kontrakt, pro-forma faktura og logistikdokumenter (f.eks. Bill of Lading / B/L, pakkeliste).
-   - Tjek for afvigelser i leverandørnavn, priser, beløb (Angivet pro-forma beløb: {proforma_beloeb}), mængder, vægt og Incoterms.
+JSON-struktur skal være præcis som følger:
+{{
+  "status_godkendt": true eller false,
+  "sammenfatning": "En kort sætning om det samlede resultat",
+  "afvigelser": [
+    {{"kategori": "Pris/Beløb", "beskrivelse": "Forklaring...", "kritisk": true/false}},
+    {{"kategori": "Havnekrav Pecém", "beskrivelse": "Forklaring...", "kritisk": true/false}}
+  ],
+  "godkendte_punkter": [
+    "Leverandørnavn matcher",
+    "Incoterms er korrekte"
+  ],
+  "mangler_og_advarsler": [
+    "Mangler 8-cifret NCM-kode",
+    "Mangler importørens CNPJ-nummer"
+  ]
+}}
 
-2. TJEK AF HAVNE- OG TOLD-DOKUMENTKRAV (Pecém / Receita Federal):
-   - **Bill of Lading (B/L):** Er havne korrekt angivet? (POL: {havn_afgang if havn_afgang else 'Tjek dokument'}, POD: {havn_ankomst})
-   - **NCM / HS-koder:** Fremgår den 8-cifrede NCM-kode for varerne?
-   - **Skatte-ID / CNPJ:** Fremgår importørens CNPJ-nummer på dokumenterne?
-   - **Særlige certifikater:** Kræver varetypen '{vare_type}' særlige certifikater (f.eks. MAPA sundhedscertifikat for kød/fødevarer eller ANVISA godkendelse)? Er de til stede i de uploadede papirer?
+Varetype: {vare_type}
+Angivet Pro-forma Beløb: {proforma_beloeb}
+Forventet ankomsthavn: {havn_ankomst}
 
-Opstil resultatet kort, overskueligt og opdelt i klare punkter på dansk. 
-Brug ⚠️ til at fremhæve eventuelle mangler, afvigelser eller kritiske fejl i havnedokumenterne.
-
-Dokumenttekst til samlet analyse:
+Dokumenttekst:
 {kombineret_tekst}
 """
                 response = client.chat.completions.create(
                     model="gpt-4o-mini",
+                    response_format={"type": "json_object"},
                     messages=[
-                        {"role": "system", "content": "Du er en skarp assistent til importkontrol og brasiliansk logistik."},
+                        {"role": "system", "content": "Du er en præcis assistent der altid svarer i gyldig JSON."},
                         {"role": "user", "content": prompt}
                     ],
-                    temperature=0.2
+                    temperature=0.1
                 )
 
-                st.markdown("### 🤖 AI Import- & Havnerapport")
-                st.success("Analysen er gennemført!")
-                st.write(response.choices[0].message.content)
+                # Parse JSON svaret
+                resultat = json.loads(response.choices[0].message.content)
+
+                st.markdown("## 📊 Analyseresultat")
+                
+                # 1. Samlet Statusindikator
+                if resultat.get("status_godkendt", False):
+                    st.success(f"🟢 **GODKENDT:** {resultat.get('sammenfatning')}")
+                else:
+                    st.error(f"🔴 **OBS / AFVIGELSER FUNDET:** {resultat.get('sammenfatning')}")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                col_res1, col_res2 = st.columns(2)
+
+                # 2. Godkendte Punkter
+                with col_res1:
+                    st.markdown("### ✅ Godkendte Punkter")
+                    godkendte = resultat.get("godkendte_punkter", [])
+                    if godkendte:
+                        for punkt in godkendte:
+                            st.write(f"✔️ {punkt}")
+                    else:
+                        st.write("Ingen fuldstændigt godkendte punkter registreret.")
+
+                # 3. Mangler & Advarsler
+                with col_res2:
+                    st.markdown("### ⚠️ Mangler & Tjekpunkter")
+                    mangler = resultat.get("mangler_og_advarsler", [])
+                    if mangler:
+                        for punkt in mangler:
+                            st.warning(f"⚠️ {punkt}")
+                    else:
+                        st.write("Ingen mangler fundet.")
+
+                # 4. Detaljerede afvigelser (hvis der er nogen)
+                afvigelser = resultat.get("afvigelser", [])
+                if afvigelser:
+                    st.markdown("---")
+                    st.markdown("### 🚨 Detaljerede Afvigelser")
+                    for afv in afvigelser:
+                        kat = afv.get("kategori", "Afvigelse")
+                        besk = afv.get("beskrivelse", "")
+                        if afv.get("kritisk", False):
+                            st.error(f"**[{kat}]** {besk}")
+                        else:
+                            st.info(f"**[{kat}]** {besk}")
 
             except Exception as e:
                 st.error(f"⚠️ Der opstod en fejl under AI-sammenligningen: {e}")
