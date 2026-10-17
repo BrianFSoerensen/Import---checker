@@ -82,7 +82,7 @@ if uploaded_file is not None:
 
 # 4. Selve tekstfeltet (hvis koden fandt noget i filen, står det heri automatisk, ellers kan du selv skrive det)
 producent = st.text_input("Producent / Leverandør", value=fundet_leverandoer)
-    vare_type = st.selectbox("Varetype", ["Pomfritter (Fries)", "Kød (Meat)", "Olivenolie (Olive Oil)", "Tomat på dåse (Canned Tomatoes)", "Andet"])
+vare_type = st.selectbox("Varetype", ["Pomfritter (Fries)", "Kød (Meat)", "Olivenolie (Olive Oil)", "Tomat på dåse (Canned Tomatoes)", "Andet"])
     if st.button("💾 Gem som Aktiv Aftale"):
         st.success("✅ Aftale er gemt som standard for denne session!")
 
