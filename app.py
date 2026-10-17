@@ -1,6 +1,7 @@
 import streamlit as st
 import pdfplumber
 import re
+from openai import OpenAI
 
 # Sæt sideopsætning
 st.set_page_config(
@@ -41,7 +42,17 @@ if not check_password():
 
 
 # ==========================================
-# 2. HOVEDAPPLIKATION (SAMMENLIGNING)
+# 2. OPENAI KLIENT INITIALISERING
+# ==========================================
+# Henter API-nøglen automatisk fra Streamlit Secrets
+try:
+    client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+except Exception:
+    st.error("⚠️ Kunne ikke finde OPENAI_API_KEY i Streamlit Secrets. Tjek dine Secrets i Streamlit Cloud.")
+
+
+# ==========================================
+# 3. HOVEDAPPLIKATION (SAMMENLIGNING)
 # ==========================================
 st.title("🇧🇷 Import & Sammenligningsværktøj")
 st.caption("ℹ️ *Bemærk: Filer og data bruges udelukkende til den aktuelle sammenligning og gemmes ikke permanent.*")
@@ -57,6 +68,7 @@ uploadede_filer = st.file_uploader(
 )
 
 udlaest_leverandoer = ""
+samlet_pdf_tekst = ""
 
 if uploadede_filer:
     st.info(f"📁 {len(uploadede_filer)} dokument(er) midlertidigt tilknyttet til sammenligning.")
@@ -65,12 +77,12 @@ if uploadede_filer:
         for fil in uploadede_filer:
             try:
                 with pdfplumber.open(fil) as pdf:
-                    fuld_tekst = ""
                     for page in pdf.pages:
-                        fuld_tekst += page.extract_text() or ""
+                        tekst = page.extract_text() or ""
+                        samlet_pdf_tekst += f"\n--- Start på side/dokument ({fil.name}) ---\n" + tekst
                 
                 if not udlaest_leverandoer:
-                    match = re.search(r"(?:Leverandør|Exporter|Producent|Supplier):\s*(.+)", fuld_tekst, re.IGNORECASE)
+                    match = re.search(r"(?:Leverandør|Exporter|Producent|Supplier):\s*(.+)", samlet_pdf_tekst, re.IGNORECASE)
                     if match:
                         udlaest_leverandoer = match.group(1).strip()
             except Exception:
@@ -111,11 +123,11 @@ with tab1:
     st.info("💡 Data herfra bruges direkte i næste fane til sammenligning mod pro-forma.")
 
 # ------------------------------------------
-# FANE 2: PRO-FORMA SAMMENLIGNING
+# FANE 2: PRO-FORMA SAMMENLIGNING (AI INTEGRATION)
 # ------------------------------------------
 with tab2:
     st.header("Sammenligning af Pro-forma mod Tilbud")
-    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale/tilbud.")
+    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale/tilbud ved hjælp af AI.")
     
     col1, col2 = st.columns(2)
     
@@ -131,16 +143,62 @@ with tab2:
 
     proforma_filer = st.file_uploader(
         "Upload specifik pro-forma faktura til sammenligning", 
-        type=["pdf", "jpg", "png"], 
+        type=["pdf"], 
         accept_multiple_files=True,
         key="proforma_docs"
     )
 
-    if st.button("🔍 Udfør Sammenligning", type="primary"):
-        if not proforma_no:
-            st.warning("Indtast venligst et pro-forma fakturanummer.")
+    # Læs eventuel tekst fra specifikke proforma filer
+    proforma_tekst = ""
+    if proforma_filer:
+        for p_fil in proforma_filer:
+            try:
+                with pdfplumber.open(p_fil) as pdf:
+                    for page in pdf.pages:
+                        proforma_tekst += f"\n--- Pro-forma ({p_fil.name}) ---\n" + (page.extract_text() or "")
+            except Exception:
+                pass
+
+    st.markdown("---")
+
+    # KNAP TIL AT KØRE OPENAI SAMMENLIGNINGEN
+    if st.button("🔍 Udfør AI-Sammenligning", type="primary"):
+        kombineret_tekst = samlet_pdf_tekst + "\n" + proforma_tekst
+
+        if not kombineret_tekst.strip():
+            st.warning("⚠️ Upload venligst mindst ét PDF-dokument før du kører AI-sammenligningen.")
         else:
-            st.success(f"Sammenligning gennemført for Pro-forma #{proforma_no}. Alt ser fint ud.")
+            with st.spinner("🤖 AI'en analyserer dokumenterne og sammenligner priser, mængder og vilkår..."):
+                try:
+                    prompt = f"""
+Du er en ekspert i importkontrol og logistik. 
+Dine opgaver:
+1. Sammenlign oplysningerne fra tilbud/kontrakt mod pro-forma fakturaen i følgende tekst.
+2. Tjek om der er afvigelser i:
+   - Leverandørnavn
+   - Priser eller samlet beløb (Indtastet pro-forma beløb i app: {proforma_beloeb})
+   - Varebeskrivelse og mængder
+   - Betalings- eller leveringsbetingelser (Incoterms)
+3. Angiv resultatet kort, overskueligt og præcist på dansk med punktforme.
+
+Dokumenttekst til analyse:
+{kombineret_tekst}
+"""
+                    response = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": "Du er en skarp assistent til importkontrol."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        temperature=0.2
+                    )
+
+                    st.markdown("### 🤖 AI Sammenligningsrapport")
+                    st.success("Analysen er gennemført!")
+                    st.write(response.choices[0].message.content)
+
+                except Exception as e:
+                    st.error(f"⚠️ Der opstod en fejl under AI-sammenligningen: {e}")
 
 # ------------------------------------------
 # FANE 3: HAVNE & LOGISTIK
@@ -152,7 +210,7 @@ with tab3:
     col1, col2 = st.columns(2)
     
     with col1:
-        havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. udskibningshavn")
+        havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. Santos, Brasilien")
         # Pecém sat som fast standard
         havn_ankomst = st.text_input("Ankomsthavn (POD)", value="Pecém, Nordøst-Brasilien")
         
