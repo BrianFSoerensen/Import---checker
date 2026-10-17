@@ -174,7 +174,7 @@ with col_upload:
 with col_text:
     mail_og_chat_tekst = st.text_area(
         "💬 Kopiér & indsæt tekst fra e-mails, WhatsApp eller chat her (Valgfrit):",
-        placeholder="Eksempel:\n'Leverandør har bekræftet på WhatsApp i dag, at prisen er \$1.05/kg og at de dækker fragten til Pecém...'",
+        placeholder="Eksempel:\n'Leverandør har bekræftet på WhatsApp i dag, at prisen er $1.05/kg og at de dækker fragten til Pecém...'",
         height=135
     )
 
@@ -325,4 +325,111 @@ Du skal analysere de uploadede dokumenter, e-mail/chat-korrespondance og bilag o
 
 {{
   "status_godkendt": true eller false,
-  "sammenfat
+  "sammenfatning": "En kort sætning om det samlede resultat",
+  "afvigelser": [
+    {{"kategori": "Pris/Beløb", "beskrivelse": "Forklaring...", "kritisk": true/false}}
+  ],
+  "godkendte_punkter": [
+    "Leverandørnavn matcher"
+  ],
+  "mangler_og_advarsler": [
+    "Mangler 8-cifret NCM-kode"
+  ]
+}}
+
+Varetype: {vare_type}
+Angivet Pro-forma Beløb: {proforma_beloeb}
+Ankomsthavn: {havn_ankomst}
+
+Samlet tekst (inkl. dokumenter, e-mails og beskeder):
+{kombineret_tekst}
+"""
+                response = koer_ai_analyse(start_prompt)
+                st.session_state["analyse_resultat"] = json.loads(response.choices[0].message.content)
+
+            except Exception as e:
+                st.error(f"⚠️ Der opstod en fejl under AI-sammenligningen: {e}")
+
+# Vis resultater
+if "analyse_resultat" in st.session_state:
+    resultat = st.session_state["analyse_resultat"]
+
+    st.markdown("## 📊 Analyseresultat")
+    
+    if resultat.get("status_godkendt", False):
+        st.success(f"🟢 **GODKENDT:** {resultat.get('sammenfatning')}")
+    else:
+        st.error(f"🔴 **OBS / AFVIGELSER FUNDET:** {resultat.get('sammenfatning')}")
+
+    st.markdown("<br>", unsafe_allow_html=True)
+    col_res1, col_res2 = st.columns(2)
+
+    with col_res1:
+        st.markdown("### ✅ Godkendte Punkter")
+        godkendte = resultat.get("godkendte_punkter", [])
+        if godkendte:
+            for punkt in godkendte:
+                st.write(f"✔️ {punkt}")
+        else:
+            st.write("Ingen registrerede godkendte punkter.")
+
+    with col_res2:
+        st.markdown("### ⚠️ Mangler & Tjekpunkter")
+        mangler = resultat.get("mangler_og_advarsler", [])
+        if mangler:
+            for punkt in mangler:
+                st.warning(f"⚠️ {punkt}")
+        else:
+            st.write("Ingen mangler fundet.")
+
+    afvigelser = resultat.get("afvigelser", [])
+    if afvigelser:
+        st.markdown("---")
+        st.markdown("### 🚨 Detaljerede Afvigelser")
+        for afv in afvigelser:
+            kat = afv.get("kategori", "Afvigelse")
+            besk = afv.get("beskrivelse", "")
+            if afv.get("kritisk", False):
+                st.error(f"**[{kat}]** {besk}")
+            else:
+                st.info(f"**[{kat}]** {besk}")
+
+    # Opfølgende Chat
+    st.markdown("---")
+    st.subheader("💬 Spørg eller opdater analysen")
+    st.caption("Skriv spørgsmål til analysen eller tilføj oplysninger (f.eks. 'CNPJ nummeret er 12.345.678/0001-90, opdater analysen').")
+
+    for besk in st.session_state.get("chat_historik", []):
+        with st.chat_message(besk["role"]):
+            st.write(besk["content"])
+
+    bruger_input = st.chat_input("Skriv spørgsmål eller yderligere oplysninger her...")
+
+    if bruger_input:
+        if "chat_historik" not in st.session_state:
+            st.session_state["chat_historik"] = []
+        
+        st.session_state["chat_historik"].append({"role": "user", "content": bruger_input})
+
+        with st.spinner("🤖 AI'en opdaterer vurderingen..."):
+            try:
+                opdateret_prompt = f"""
+Du er en ekspert i importkontrol for Pecém, Brasilien.
+Her er den seneste analysestruktur: {json.dumps(resultat)}
+
+Brugeren har givet følgende yderligere oplysninger eller spørgsmål:
+"{bruger_input}"
+
+Opdater hele JSON-strukturen ud fra den nye information. 
+Returner KUN den opdaterede JSON-struktur.
+
+Samlet tekst:
+{st.session_state.get('kombineret_tekst', '')}
+"""
+                response = koer_ai_analyse(opdateret_prompt)
+                st.session_state["analyse_resultat"] = json.loads(response.choices[0].message.content)
+                st.session_state["chat_historik"].append({"role": "assistant", "content": f"Analysen er opdateret ud fra din besked: '{bruger_input}'"})
+                st.rerun()
+
+            except Exception as e:
+                st.error(f"⚠️ Kunne ikke opdatere analysen: {e}")
