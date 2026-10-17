@@ -56,7 +56,32 @@ tab1, tab2, tab3 = st.tabs([
 with tab1:
     st.header("Trin 1: Upload Tilbud / Aftale")
     uploaded_tilbud = st.file_uploader("Træk tilbudsfil hertil", type=["pdf", "txt", "docx", "png", "jpg"], key="tilbud")
-    producent = st.text_input("Producent / Leverandør", value="European Food Corp")
+
+# 1. Lav en boks hvor man kan uploade en fil (f.eks. en PDF)
+uploaded_file = st.file_uploader("Upload dokument (f.eks. PDF)", type=["pdf"])
+
+# 2. Start med et tomt leverandør-felt
+fundet_leverandoer = ""
+
+# 3. Hvis der ER uploadet en fil, kigger vi i den
+if uploaded_file is not None:
+    # Her kan koden læse filen (eksempelvis hvis det er en PDF)
+    # Hvis filen f.eks. indeholder teksten "Leverandør: [Navn]", kan vi fange det:
+    import pdfplumber
+    
+    with pdfplumber.open(uploaded_file) as pdf:
+        samlet_tekst = ""
+        for page in pdf.pages:
+            samlet_tekst += page.extract_text() or ""
+            
+    # Simpelt tjek: Hvis ordet "European Food Corp" står i filen, sætter vi det ind automatisk
+    if "European Food Corp" in samlet_tekst:
+        fundet_leverandoer = "European Food Corp"
+    elif "En anden leverandør" in samlet_tekst:
+        fundet_leverandoer = "En anden leverandør"
+
+# 4. Selve tekstfeltet (hvis koden fandt noget i filen, står det heri automatisk, ellers kan du selv skrive det)
+producent = st.text_input("Producent / Leverandør", value=fundet_leverandoer)
     vare_type = st.selectbox("Varetype", ["Pomfritter (Fries)", "Kød (Meat)", "Olivenolie (Olive Oil)", "Tomat på dåse (Canned Tomatoes)", "Andet"])
     if st.button("💾 Gem som Aktiv Aftale"):
         st.success("✅ Aftale er gemt som standard for denne session!")
