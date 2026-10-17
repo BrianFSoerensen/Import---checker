@@ -111,13 +111,18 @@ with tab2:
 # ------------------------------------------
 with tab3:
     st.header("Havne & Logistik")
-    st.write("Sammenligning og verifikation af oplysninger mod havne og fragtdokumenter.")
+    st.write("Sammenligning og verifikation af oplysninger mod havnene.")
     
-    havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. Santos, Brasilien")
-    havn_ankomst = st.text_input("Ankomsthavn (POD)", placeholder="f.eks. Aarhus, Danmark")
+    havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. udskibningshavn")
     
-    st.date_input("Forventet Afgangsdato (ETD)")
-    st.date_input("Forventet Ankomstdato (ETA)")
+    # Pecém sat som fast standardværdi for modtagelseshavnen
+    havn_ankomst = st.text_input("Ankomsthavn (POD)", value="Pecém, Nordøst-Brasilien")
+    
+    col_d1, col_d2 = st.columns(2)
+    with col_d1:
+        st.date_input("Forventet Afgangsdato (ETD)")
+    with col_d2:
+        st.date_input("Forventet Ankomstdato (ETA)")
 
     if st.button("🚢 Bekræft Havneoplysninger"):
-        st.success("Havne- og logistikoplysninger registreret!")
+        st.success(f"Havneoplysninger registreret med ankomst i {havn_ankomst}!")
