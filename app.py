@@ -1,4 +1,30 @@
 import streamlit as st
+
+# --- ADGANGSKODE BESKYTTELSE ---
+def check_password():
+    """Returnerer True hvis brugeren har indtastet den korrekte kode."""
+    KORREKT_KODE = "brasilien2026"  # Skift denne til din ønskede kode!
+
+    if st.session_state.get("password_correct", False):
+        return True
+
+    st.markdown("## 🔒 Log ind på Import-kontrol")
+    st.write("Indtast adgangskoden for at få adgang til systemet.")
+    
+    password_input = st.text_input("Adgangskode", type="password")
+    
+    if st.button("Log ind"):
+        if password_input == KORREKT_KODE:
+            st.session_state["password_correct"] = True
+            st.rerun()
+        else:
+            st.error("❌ Forkert adgangskode. Prøv igen.")
+            
+    return False
+
+if not check_password():
+    st.stop()
+# ------------------------------
 import pandas as pd
 from datetime import datetime
 
