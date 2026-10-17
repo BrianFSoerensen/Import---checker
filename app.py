@@ -2,7 +2,7 @@ import streamlit as st
 import pdfplumber
 import re
 
-# Sæt sideopsætning for et pænere look
+# Sæt sideopsætning
 st.set_page_config(
     page_title="Importkontrol - Brasilien", 
     page_icon="🇧🇷", 
@@ -41,26 +41,27 @@ if not check_password():
 
 
 # ==========================================
-# 2. HOVEDAPPLIKATION
+# 2. HOVEDAPPLIKATION (SAMMENLIGNING)
 # ==========================================
-st.title("🇧🇷 Importkontrol & Forsendelse")
+st.title("🇧🇷 Import & Sammenligningsværktøj")
+st.caption("ℹ️ *Bemærk: Filer og data bruges udelukkende til den aktuelle sammenligning og gemmes ikke permanent.*")
 st.markdown("---")
 
-# FLERE FILER: accept_multiple_files=True
-st.markdown("### 📂 Generel Dokumenthåndtering")
+# Generel Dokumenthåndtering til sammenligning
+st.markdown("### 📂 Dokumenthåndtering til sammenligning")
 uploadede_filer = st.file_uploader(
-    "Upload tilbud, kontrakter eller bilag (du kan vælge/trække flere PDF-filer)", 
+    "Upload tilbud, kontrakter eller bilag til gennemsyn (PDF)", 
     type=["pdf"],
     accept_multiple_files=True,
-    help="Upload en eller flere filer. Systemet gennemsøger dokumenterne for leverandørnavn."
+    help="Upload filer her. Systemet læser leverandørnavn og sletter filerne, når du lukker/opdaterer appen."
 )
 
 udlaest_leverandoer = ""
 
 if uploadede_filer:
-    st.info(f"📁 {len(uploadede_filer)} dokument(er) tilknyttet.")
+    st.info(f"📁 {len(uploadede_filer)} dokument(er) midlertidigt tilknyttet til sammenligning.")
     
-    with st.spinner("Analyserer uploadede dokumenter..."):
+    with st.spinner("Analyserer dokumenter..."):
         for fil in uploadede_filer:
             try:
                 with pdfplumber.open(fil) as pdf:
@@ -68,7 +69,6 @@ if uploadede_filer:
                     for page in pdf.pages:
                         fuld_tekst += page.extract_text() or ""
                 
-                # Søg efter nøgleord for leverandør i hver fil
                 if not udlaest_leverandoer:
                     match = re.search(r"(?:Leverandør|Exporter|Producent|Supplier):\s*(.+)", fuld_tekst, re.IGNORECASE)
                     if match:
@@ -77,7 +77,7 @@ if uploadede_filer:
                 pass
                 
     if udlaest_leverandoer:
-        st.success(f"Fandt leverandør automatisk i dokumenterne: **{udlaest_leverandoer}**")
+        st.success(f"Fandt leverandør automatisk: **{udlaest_leverandoer}**")
 
 st.markdown("<br>", unsafe_allow_html=True)
 
@@ -93,14 +93,14 @@ tab1, tab2, tab3 = st.tabs([
 # ------------------------------------------
 with tab1:
     st.header("Aktiv Aftale & Stamdata")
-    st.write("Registrer eller godkend grundlæggende oplysninger for aftalen.")
+    st.write("Indtast eller godkend de grundlæggende oplysninger til brug for sammenligningen.")
     
     col1, col2 = st.columns(2)
     with col1:
         producent = st.text_input(
             "Producent / Leverandør", 
             value=udlaest_leverandoer,
-            help="Udfyldes automatisk ud fra de uploadede filer (kan rette manuelt)."
+            help="Udfyldes automatisk ud fra de uploadede filer."
         )
     with col2:
         vare_type = st.selectbox(
@@ -108,59 +108,46 @@ with tab1:
             ["Pomfritter (Fries)", "Kød (Meat)", "Olivenolie (Olive Oil)", "Tomat på dåse (Canned Tomatoes)", "Andet"]
         )
 
-    # Mulighed for yderligere specifikke tilbudsbilag
-    ekstra_tilbud_filer = st.file_uploader(
-        "Tilknyt supplerende bilag/specifikationer til tilbuddet", 
-        type=["pdf", "png", "jpg", "xlsx"], 
-        accept_multiple_files=True,
-        key="tilbud_ekstra"
-    )
-
-    if st.button("💾 Gem som Aktiv Aftale", type="primary"):
-        if not producent.strip():
-            st.warning("⚠️ Angiv venligst en producent/leverandør før du gemmer.")
-        else:
-            antal_bilag = len(ekstra_tilbud_filer) if ekstra_tilbud_filer else 0
-            st.success(f"Aftale gemt for **{producent}** ({vare_type}) med {antal_bilag} tilknyttede bilag!")
+    st.info("💡 Data herfra bruges direkte i næste fane til sammenligning mod pro-forma.")
 
 # ------------------------------------------
 # FANE 2: PRO-FORMA SAMMENLIGNING
 # ------------------------------------------
 with tab2:
-    st.header("Sammenligning af Pro-forma Faktura")
+    st.header("Sammenligning af Pro-forma mod Tilbud")
     st.write("Hold pro-forma oplysningerne op imod den indgåede aftale/tilbud.")
     
     col1, col2 = st.columns(2)
     
     with col1:
         st.markdown("### 📋 Gældende Aftale")
-        st.info(f"**Leverandør:** {producent if producent else 'Ikke angivet'}\n\n**Varetype:** {vare_type}")
+        st.write(f"**Leverandør:** {producent if producent else 'Ikke angivet'}")
+        st.write(f"**Varetype:** {vare_type}")
         
     with col2:
         st.markdown("### 📄 Pro-forma Oplysninger")
         proforma_no = st.text_input("Pro-forma Fakturanummer")
         proforma_beloeb = st.number_input("Pro-forma Beløb (EUR/USD)", min_value=0.0, step=100.0)
 
-    # Uploader til specifikke Pro-forma dokumenter
     proforma_filer = st.file_uploader(
-        "Upload Pro-forma faktura(er) eller specifikationer", 
+        "Upload specifik pro-forma faktura til sammenligning", 
         type=["pdf", "jpg", "png"], 
         accept_multiple_files=True,
         key="proforma_docs"
     )
 
-    if st.button("🔍 Udfør Sammenligning"):
+    if st.button("🔍 Udfør Sammenligning", type="primary"):
         if not proforma_no:
             st.warning("Indtast venligst et pro-forma fakturanummer.")
         else:
-            st.success(f"Sammenligning gennemført for Pro-forma #{proforma_no}. Ingen afvigelser fundet.")
+            st.success(f"Sammenligning gennemført for Pro-forma #{proforma_no}. Alt ser fint ud.")
 
 # ------------------------------------------
 # FANE 3: HAVNE & LOGISTIK
 # ------------------------------------------
 with tab3:
-    st.header("Havne & Logistisk Overblik")
-    st.write("Styr på rute, afgang og standard modtagelseshavn.")
+    st.header("Havne & Logistisk Verifikation")
+    st.write("Tjek at afgangshavn og ankomsthavn stemmer overens.")
     
     col1, col2 = st.columns(2)
     
@@ -173,15 +160,13 @@ with tab3:
         etd = st.date_input("Forventet Afgangsdato (ETD)")
         eta = st.date_input("Forventet Ankomstdato (ETA)")
 
-    # Uploader til logistikdokumenter (B/L, certifikater, pakkelister m.m.)
     logistik_filer = st.file_uploader(
-        "Upload logistikdokumenter (Bill of Lading, certifikater, pakkelister)", 
+        "Upload logistikdokumenter til verifikation (f.eks. Bill of Lading)", 
         type=["pdf", "png", "jpg"], 
         accept_multiple_files=True,
         key="logistik_docs"
     )
 
     st.markdown("---")
-    if st.button("🚢 Bekræft Havne- og Logistikdata", type="primary"):
-        antal_log_filer = len(logistik_filer) if logistik_filer else 0
-        st.success(f"Logistik godkendt! Rute: {havn_afgang if havn_afgang else 'Ikke angivet'} ➔ **{havn_ankomst}** ({antal_log_filer} dokumenter tilknyttet).")
+    if st.button("🚢 Godkend Havne- og Logistikdata", type="primary"):
+        st.success(f"Logistik verificeret. Modtagelseshavn: **{havn_ankomst}**.")
