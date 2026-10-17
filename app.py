@@ -37,7 +37,7 @@ if not check_password():
 st.title("📋 Importkontrol")
 
 # ÉN samlet fil-uploader til alle informationer
-uploadet_fil = st.file_uploader("Upload tilbud eller kontrakt (PDF)", type=["pdf"])
+uploadet_fil = st.file_uploader("Upload tilbud og/eller kontrakt (PDF)", type=["pdf"])
 
 udlaest_leverandoer = ""
 
