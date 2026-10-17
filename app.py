@@ -127,7 +127,7 @@ with tab1:
 # ------------------------------------------
 with tab2:
     st.header("Sammenligning af Pro-forma mod Tilbud")
-    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale/tilbud ved hjælp af AI.")
+    st.write("Hold pro-forma oplysningerne op imod den indgåede aftale og brasilianske toldkrav ved hjælp af AI.")
     
     col1, col2 = st.columns(2)
     
@@ -168,18 +168,24 @@ with tab2:
         if not kombineret_tekst.strip():
             st.warning("⚠️ Upload venligst mindst ét PDF-dokument før du kører AI-sammenligningen.")
         else:
-            with st.spinner("🤖 AI'en analyserer dokumenterne og sammenligner priser, mængder og vilkår..."):
+            with st.spinner("🤖 AI'en analyserer dokumenterne, sammenligner priser og tjekker brasilianske toldkrav..."):
                 try:
                     prompt = f"""
-Du er en ekspert i importkontrol og logistik. 
+Du er en ekspert i brasiliansk importkontrol og logistik med særligt kendskab til ankomst i Pecém, Brasilien.
+
 Dine opgaver:
-1. Sammenlign oplysningerne fra tilbud/kontrakt mod pro-forma fakturaen i følgende tekst.
-2. Tjek om der er afvigelser i:
+1. Sammenlign oplysningerne fra tilbud/kontrakt mod pro-forma fakturaen.
+2. Tjek for afvigelser i:
    - Leverandørnavn
-   - Priser eller samlet beløb (Indtastet pro-forma beløb i app: {proforma_beloeb})
-   - Varebeskrivelse og mængder
-   - Betalings- eller leveringsbetingelser (Incoterms)
-3. Angiv resultatet kort, overskueligt og præcist på dansk med punktforme.
+   - Priser, samlet beløb og valuta (Indtastet pro-forma beløb i app: {proforma_beloeb})
+   - Varebeskrivelse, mængder og vægt
+   - Betalings- og leveringsbetingelser (Incoterms som FOB/CIF)
+3. TJEK MOD BRASILIANSKE IMPORTKRAV (Receita Federal / Pecém):
+   - Er der angivet en 8-cifret NCM-kode (HS-kode) for varerne?
+   - Fremgår importørens CNPJ-nummer eller skatte-ID i dokumentet?
+   - Kræver varetypen ({vare_type}) særlige certifikater (f.eks. MAPA sundhedscertifikat for kød/fødevarer eller ANVISA godkendelse)?
+
+Angiv resultatet kort, overskueligt og opdelt i punkter på dansk. Fremhæv eventuelle mangler, afvigelser eller advarsler med ⚠️.
 
 Dokumenttekst til analyse:
 {kombineret_tekst}
@@ -187,7 +193,7 @@ Dokumenttekst til analyse:
                     response = client.chat.completions.create(
                         model="gpt-4o-mini",
                         messages=[
-                            {"role": "system", "content": "Du er en skarp assistent til importkontrol."},
+                            {"role": "system", "content": "Du er en skarp assistent til importkontrol og brasiliansk logistik."},
                             {"role": "user", "content": prompt}
                         ],
                         temperature=0.2
@@ -205,12 +211,12 @@ Dokumenttekst til analyse:
 # ------------------------------------------
 with tab3:
     st.header("Havne & Logistisk Verifikation")
-    st.write("Tjek at afgangshavn og ankomsthavn stemmer overens.")
+    st.write("Tjek at afgangshavn og ankomsthavn stemmer overens med logistikaftalen.")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. Santos, Brasilien")
+        havn_afgang = st.text_input("Afgangshavn (POL)", placeholder="f.eks. Santos, Brasilien eller Rotterdam")
         # Pecém sat som fast standard
         havn_ankomst = st.text_input("Ankomsthavn (POD)", value="Pecém, Nordøst-Brasilien")
         
@@ -227,4 +233,4 @@ with tab3:
 
     st.markdown("---")
     if st.button("🚢 Godkend Havne- og Logistikdata", type="primary"):
-        st.success(f"Logistik verificeret. Modtagelseshavn: **{havn_ankomst}**.")
+        st.success(f"Logistik verificeret. Rute: {havn_afgang if havn_afgang else 'Ikke angivet'} ➔ **{havn_ankomst}**.")
