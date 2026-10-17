@@ -1,3 +1,7 @@
 streamlit
 pdfplumber
 openai
+python-docx
+openpyxl
+easyocr
+pillow
