@@ -44,7 +44,7 @@ TRANSLATIONS = {
         "chat_paste_label": "💬 Copie e cole textos de e-mails, WhatsApp ou conversas aqui (Opcional):",
         "chat_paste_placeholder": "Exemplo:\n'O fornecedor confirmou no WhatsApp que o preço é €1.05/kg FOB e o frete marítimo é €2.500...'",
         "supplier_found": "Fornecedor identificado automaticamente:",
-        "currency_select_label": "Moeda Principal dos Documents:",
+        "currency_select_label": "Moeda Principal dos Documentos:",
         "tab1": "1️⃣ Oferta & Acordo Ativo",
         "tab2": "2️⃣ Comparação Pro-forma",
         "tab3": "3️⃣ Portos & Logística",
@@ -400,44 +400,4 @@ else:
             st.success(f"{t['supplier_found']} **{udlaest_leverandoer}**")
 
     # Automatisk valutadetektion fra tekst (eller manuel overstyring)
-    detected_currency = "EUR" if "EUR" in samlet_pdf_tekst or "€" in samlet_pdf_tekst else ("USD" if "USD" in samlet_pdf_tekst or "\$" in samlet_pdf_tekst else "EUR")
-
-    col_curr_select, col_space = st.columns([1, 2])
-    with col_curr_select:
-        valgt_valuta = st.selectbox(
-            t["currency_select_label"],
-            options=["EUR", "USD"],
-            index=0 if detected_currency == "EUR" else 1,
-            help="Vælg om dokumentpriser er angivet i EUR eller USD."
-        )
-
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Opdeling i 4 faner (Inkl. Nacionalização)
-    tab1, tab2, tab3, tab4 = st.tabs([
-        t["tab1"], 
-        t["tab2"], 
-        t["tab3"],
-        t["tab4"]
-    ])
-
-    with tab1:
-        st.header(t["tab1"])
-        col1, col2 = st.columns(2)
-        with col1:
-            producent = st.text_input(t["supplier_input"], value=udlaest_leverandoer)
-        with col2:
-            vare_type = st.selectbox(t["product_type"], [t["prod_fries"], t["prod_meat"], t["prod_oil"], t["prod_canned"], t["prod_other"]])
-
-    with tab2:
-        st.header(t["tab2"])
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(f"### 📋 {t['active_agreement']}")
-            st.write(f"**{t['supplier_input']}:** {producent if producent else '-'}")
-            st.write(f"**{t['product_type']}:** {vare_type}")
-            st.write(f"**Moeda / Valuta:** {valgt_valuta}")
-        with col2:
-            st.markdown(f"### 📄 {t['proforma_info']}")
-            proforma_no = st.text_input(t["proforma_no"])
-            proforma_beloeb = st.number_input(f"{t['proforma_amount']} ({valgt_valuta})", min_value=0.0, step=1
+    detected_currency = "EUR" if "EUR" in samlet_pdf_tekst or "€" in samlet_pdf_tekst else ("USD" if "USD" in samlet_pdf_tek
