@@ -96,7 +96,7 @@ TRANSLATIONS = {
         "tax_res": "Total de Impostos Estimados",
         "total_landed": "Custo Total Nacionalizado",
         "unit_landed": "Custo Final por Unidade/kg",
-        "fx_info_box": "📌 **Base de Câmbio Utilizada:** 1 {curr} = **R\$ {fx:.4f}** (Data: **{dt}**)"
+        "fx_info_box": "📌 **Base de Câmbio Utilizada:** 1 {curr} = **R$ {fx:.4f}** (Data: **{dt}**)"
     },
     "en": {
         "title": "🇧🇷 Import Control & Nationalization",
@@ -167,7 +167,7 @@ TRANSLATIONS = {
         "tax_res": "Estimated Total Taxes",
         "total_landed": "Total Nationalized Cost",
         "unit_landed": "Final Cost per Unit/kg",
-        "fx_info_box": "📌 **Exchange Rate Base Used:** 1 {curr} = **R\$ {fx:.4f}** (Date: **{dt}**)"
+        "fx_info_box": "📌 **Exchange Rate Base Used:** 1 {curr} = **R$ {fx:.4f}** (Date: **{dt}**)"
     },
     "da": {
         "title": "🇧🇷 Import- & Nationaliseringskontrol",
@@ -238,7 +238,7 @@ TRANSLATIONS = {
         "tax_res": "Estimerede Samlede Skatter",
         "total_landed": "Samlet Nationaliseret Pris",
         "unit_landed": "Endelig Pris pr. Enhed/kg",
-        "fx_info_box": "📌 **Anvendt Valutakurs:** 1 {curr} = **R\$ {fx:.4f}** (Dato: **{dt}**)"
+        "fx_info_box": "📌 **Anvendt Valutakurs:** 1 {curr} = **R$ {fx:.4f}** (Dato: **{dt}**)"
     }
 }
 
@@ -400,4 +400,263 @@ else:
             st.success(f"{t['supplier_found']} **{udlaest_leverandoer}**")
 
     # Automatisk valutadetektion fra tekst (eller manuel overstyring)
-    detected_currency = "EUR" if "EUR" in samlet_pdf_tekst or "€" in samlet_pdf_tekst else ("USD" if "USD" in samlet_pdf_tek
+    detected_currency = "EUR" if "EUR" in samlet_pdf_tekst or "€" in samlet_pdf_tekst else ("USD" if "USD" in samlet_pdf_tekst or "$" in samlet_pdf_tekst else "EUR")
+
+    col_curr_select, col_space = st.columns([1, 2])
+    with col_curr_select:
+        valgt_valuta = st.selectbox(
+            t["currency_select_label"],
+            options=["EUR", "USD"],
+            index=0 if detected_currency == "EUR" else 1,
+            help="Vælg om dokumentpriser er angivet i EUR eller USD."
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Opdeling i 4 faner (Inkl. Nacionalização)
+    tab1, tab2, tab3, tab4 = st.tabs([
+        t["tab1"], 
+        t["tab2"], 
+        t["tab3"],
+        t["tab4"]
+    ])
+
+    with tab1:
+        st.header(t["tab1"])
+        col1, col2 = st.columns(2)
+        with col1:
+            producent = st.text_input(t["supplier_input"], value=udlaest_leverandoer)
+        with col2:
+            vare_type = st.selectbox(t["product_type"], [t["prod_fries"], t["prod_meat"], t["prod_oil"], t["prod_canned"], t["prod_other"]])
+
+    with tab2:
+        st.header(t["tab2"])
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"### 📋 {t['active_agreement']}")
+            st.write(f"**{t['supplier_input']}:** {producent if producent else '-'}")
+            st.write(f"**{t['product_type']}:** {vare_type}")
+            st.write(f"**Moeda / Valuta:** {valgt_valuta}")
+        with col2:
+            st.markdown(f"### 📄 {t['proforma_info']}")
+            proforma_no = st.text_input(t["proforma_no"])
+            proforma_beloeb = st.number_input(f"{t['proforma_amount']} ({valgt_valuta})", min_value=0.0, step=100.0)
+
+        proforma_filer = st.file_uploader(t["upload_proforma"], type=ACCEPTED_TYPES, accept_multiple_files=True, key="proforma_docs")
+        proforma_tekst = ""
+        if proforma_filer:
+            for p_fil in proforma_filer:
+                proforma_tekst += f"\n--- Pro-forma ({p_fil.name}) ---\n" + udtraek_tekst_fra_fil(p_fil)
+
+    with tab3:
+        st.header(t["tab3"])
+        col1, col2 = st.columns(2)
+        with col1:
+            havn_afgang = st.text_input(t["pol_label"], placeholder="e.g. Rotterdam, Santos")
+            havn_ankomst = st.text_input(t["pod_label"], value="Pecém, Ceará, Brasil")
+        with col2:
+            etd = st.date_input(t["etd_label"])
+            eta = st.date_input(t["eta_label"])
+
+        logistik_filer = st.file_uploader(t["upload_logistics"], type=ACCEPTED_TYPES, accept_multiple_files=True, key="logistik_docs")
+        logistik_tekst = ""
+        if logistik_filer:
+            for l_fil in logistik_filer:
+                logistik_tekst += f"\n--- Logistics ({l_fil.name}) ---\n" + udtraek_tekst_fra_fil(l_fil)
+
+    with tab4:
+        st.header(t["nat_title"])
+        st.write(t["nat_desc"])
+        
+        col_n1, col_n2, col_n3 = st.columns(3)
+        default_fx = 6.10 if valgt_valuta == "EUR" else 5.50
+        
+        with col_n1:
+            st.markdown(f"##### 📦 Vare & Fragt ({valgt_valuta})")
+            val_fob = st.number_input(f"Valor Mercadoria ({valgt_valuta})", value=float(proforma_beloeb), min_value=0.0)
+            val_qty = st.number_input(t["weight_qty"], value=24000.0, min_value=1.0)
+            val_freight = st.number_input(f"{t['freight_cost']} ({valgt_valuta})", value=2500.0, min_value=0.0)
+            val_insurance = st.number_input(f"{t['insurance_cost']} ({valgt_valuta})", value=150.0, min_value=0.0)
+
+        with col_n2:
+            st.markdown("##### 💱 Câmbio & Impostos Federais")
+            val_fx_date = st.date_input(t["fx_date"], value=date.today())
+            val_fx = st.number_input(t["exchange_rate"].format(curr=valgt_valuta), value=default_fx, min_value=0.1, step=0.01, format="%.4f")
+            rate_ii = st.number_input(t["ii_rate"], value=10.0, min_value=0.0, max_value=100.0)
+            rate_ipi = st.number_input(t["ipi_rate"], value=0.0, min_value=0.0, max_value=100.0)
+
+        with col_n3:
+            st.markdown("##### 🏖️ Impostos Estaduais (Ceará)")
+            rate_piscofins = st.number_input(t["pis_cofins_rate"], value=11.75, min_value=0.0, max_value=100.0)
+            rate_icms = st.number_input(t["icms_rate"], value=20.0, min_value=0.0, max_value=100.0)
+
+        cif_foreign = val_fob + val_freight + val_insurance
+        cif_brl = cif_foreign * val_fx
+        
+        val_ii = cif_brl * (rate_ii / 100.0)
+        val_ipi = (cif_brl + val_ii) * (rate_ipi / 100.0)
+        val_piscofins = cif_brl * (rate_piscofins / 100.0)
+        
+        base_icms = (cif_brl + val_ii + val_ipi + val_piscofins) / (1.0 - (rate_icms / 100.0)) if rate_icms < 100 else 0
+        val_icms = base_icms * (rate_icms / 100.0)
+        
+        total_impostos_brl = val_ii + val_ipi + val_piscofins + val_icms
+        total_landed_brl = cif_brl + total_impostos_brl
+        unit_landed_brl = total_landed_brl / val_qty if val_qty > 0 else 0
+
+        st.markdown("---")
+        st.info(t["fx_info_box"].format(curr=valgt_valuta, fx=val_fx, dt=val_fx_date.strftime('%d/%m/%Y')))
+        st.markdown("### 📊 Resultado da Simulação")
+        
+        c_res1, c_res2, c_res3, c_res4 = st.columns(4)
+        c_res1.metric(t["cif_res"], f"R$ {cif_brl:,.2f}", f"{cif_foreign:,.2f} {valgt_valuta}")
+        c_res2.metric(t["tax_res"], f"R$ {total_impostos_brl:,.2f}")
+        c_res3.metric(t["total_landed"], f"R$ {total_landed_brl:,.2f}")
+        c_res4.metric(t["unit_landed"], f"R$ {unit_landed_brl:,.2f} / kg")
+
+    st.markdown("---")
+    st.subheader(f"🔍 {t['run_ai_btn']}")
+
+    def koer_ai_analyse(prompt_tekst):
+        return client.chat.completions.create(
+            model="gpt-4o-mini",
+            response_format={"type": "json_object"},
+            messages=[
+                {"role": "system", "content": f"You are a precise import control assistant for Pecém, Brazil. Always respond in valid JSON. {t['ai_lang_instruction']}"},
+                {"role": "user", "content": prompt_tekst}
+            ],
+            temperature=0.1
+        )
+
+    if st.button(t['run_ai_btn'], type="primary", use_container_width=True):
+        kombineret_tekst = samlet_pdf_tekst + "\n" + proforma_tekst + "\n" + logistik_tekst
+
+        if not kombineret_tekst.strip():
+            st.warning(t['no_docs_warn'])
+        else:
+            with st.spinner(t['analyzing']):
+                try:
+                    st.session_state["kombineret_tekst"] = kombineret_tekst
+                    st.session_state["chat_historik"] = []
+                    
+                    start_prompt = f"""
+You are an expert in Brazilian import control and port logistics for Pecém, Brazil.
+Analyze the provided documents, email/chat correspondence, and attachments and return a response IN STRICT JSON FORMAT:
+
+{{
+  "status_godkendt": true or false,
+  "sammenfatning": "A concise summary including nationalization cost assessment",
+  "afvigelser": [
+    {{"kategori": "Price/Taxes", "beskrivelse": "Explanation...", "kritisk": true/false}}
+  ],
+  "godkendte_punkter": [
+    "Supplier name matches"
+  ],
+  "mangler_og_advarsler": [
+    "Missing 8-digit NCM code"
+  ]
+}}
+
+STRICT CURRENCY RULE: The document currency is verified as {valgt_valuta}. DO NOT write EUR/USD, ONLY write {valgt_valuta} or BRL.
+Exchange Rate Used: 1 {valgt_valuta} = {val_fx} BRL (Date: {val_fx_date.strftime('%d/%m/%Y')}).
+
+LANGUAGE REQUIREMENT: Write all text values in: {t['ai_lang_instruction']}
+
+Product Category: {vare_type}
+Pro-forma Amount: {proforma_beloeb} {valgt_valuta}
+Port of Discharge: {havn_ankomst}
+Calculated CIF (BRL): R$ {cif_brl:,.2f} ({cif_foreign:,.2f} {valgt_valuta})
+Calculated Total Landed Cost (BRL): R$ {total_landed_brl:,.2f}
+
+Combined Content:
+{kombineret_tekst}
+"""
+                    response = koer_ai_analyse(start_prompt)
+                    st.session_state["analyse_resultat"] = json.loads(response.choices[0].message.content)
+
+                except Exception as e:
+                    st.error(f"⚠️ Error during AI Analysis: {e}")
+
+    if "analyse_resultat" in st.session_state:
+        resultat = st.session_state["analyse_resultat"]
+
+        st.markdown(f"## {t['results_header']}")
+        
+        if resultat.get("status_godkendt", False):
+            st.success(f"{t['approved']} {resultat.get('sammenfatning')}")
+        else:
+            st.error(f"{t['discrepancies_found']} {resultat.get('sammenfatning')}")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+        col_res1, col_res2 = st.columns(2)
+
+        with col_res1:
+            st.markdown(f"### {t['approved_points']}")
+            godkendte = resultat.get("godkendte_punkter", [])
+            if godkendte:
+                for punkt in godkendte:
+                    st.write(f"✔️ {punkt}")
+            else:
+                st.write(t['no_approved'])
+
+        with col_res2:
+            st.markdown(f"### {t['warnings_points']}")
+            mangler = resultat.get("mangler_og_advarsler", [])
+            if mangler:
+                for punkt in mangler:
+                    st.warning(f"⚠️ {punkt}")
+            else:
+                st.write(t['no_warnings'])
+
+        afvigelser = resultat.get("afvigelser", [])
+        if afvigelser:
+            st.markdown("---")
+            st.markdown(f"### {t['detailed_discrepancies']}")
+            for afv in afvigelser:
+                kat = afv.get("kategori", "Discrepancy")
+                besk = afv.get("beskrivelse", "")
+                if afv.get("kritisk", False):
+                    st.error(f"**[{kat}]** {besk}")
+                else:
+                    st.info(f"**[{kat}]** {besk}")
+
+        st.markdown("---")
+        st.subheader(t['followup_title'])
+        st.caption(t['followup_caption'])
+
+        for besk in st.session_state.get("chat_historik", []):
+            with st.chat_message(besk["role"]):
+                st.write(besk["content"])
+
+        bruger_input = st.chat_input(t['chat_placeholder'])
+
+        if bruger_input:
+            if "chat_historik" not in st.session_state:
+                st.session_state["chat_historik"] = []
+            
+            st.session_state["chat_historik"].append({"role": "user", "content": bruger_input})
+
+            with st.spinner("🤖 ..."):
+                try:
+                    opdateret_prompt = f"""
+You are an expert in import control for Pecém, Brazil.
+Latest JSON structure: {json.dumps(resultat)}
+
+User input / query:
+"{bruger_input}"
+
+Currency: {valgt_valuta}. Exchange rate: 1 {valgt_valuta} = {val_fx} BRL ({val_fx_date.strftime('%d/%m/%Y')}).
+Update the JSON structure based on the new info. 
+LANGUAGE REQUIREMENT: Write JSON text values in target language: {t['ai_lang_instruction']}
+Return ONLY the updated JSON structure.
+
+Combined text:
+{st.session_state.get('kombineret_tekst', '')}
+"""
+                    response = koer_ai_analyse(opdateret_prompt)
+                    st.session_state["analyse_resultat"] = json.loads(response.choices[0].message.content)
+                    st.session_state["chat_historik"].append({"role": "assistant", "content": f"Analysis updated based on: '{bruger_input}'"})
+                    st.rerun()
+
+                except Exception as e:
+                    st.error(f"⚠️ Could not update analysis: {e}")
