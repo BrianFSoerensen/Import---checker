@@ -285,21 +285,25 @@ Appen fungerer som et **intelligent sammenlignings- og beregningsværktøj**, de
 }
 
 # ==========================================
-# 1. ADGANGSKODE BESKYTTELSE & VELKOMST
+# 1. SPROG- OG SESSION-INITIALISERING
 # ==========================================
-def check_password():
-    KORREKT_KODE = "brasilien2026"
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "pt"
 
-    if st.session_state.get("password_correct", False):
-        return True
+if "password_correct" not in st.session_state:
+    st.session_state["password_correct"] = False
 
+# ==========================================
+# 2. LOGIN / VELKOMSTSKÆRM ELLER HOVEDAPP
+# ==========================================
+if not st.session_state["password_correct"]:
     col1, col2, col3 = st.columns([1, 3, 1])
     with col2:
         selected_lang_code = st.selectbox(
             "🌐 Idioma / Language / Sprog:",
             options=["pt", "en", "da"],
             format_func=lambda x: "🇧🇷 Português (Brasil)" if x == "pt" else ("🇬🇧 English" if x == "en" else "🇩🇰 Dansk"),
-            index=0
+            index=["pt", "en", "da"].index(st.session_state["lang"])
         )
         st.session_state["lang"] = selected_lang_code
         t = TRANSLATIONS[selected_lang_code]
@@ -312,7 +316,7 @@ def check_password():
         password_input = st.text_input(t['password_label'], type="password")
         
         if st.button(t['login_btn'], type="primary", use_container_width=True):
-            if password_input == KORREKT_KODE:
+            if password_input == "brasilien2026":
                 st.session_state["password_correct"] = True
                 st.rerun()
             else:
@@ -324,14 +328,31 @@ def check_password():
         st.markdown("---")
         st.markdown(f"### {t['instructions_title']}")
         st.markdown(t['instructions_text'])
-                
-    return False
 
-if not check_password():
-    st.stop()
+else:
+    # ------------------------------------------
+    # HOVEDAPPLIKATION (NÅR LOGGARET IND)
+    # ------------------------------------------
+    lang_code = st.session_state["lang"]
+    t = TRANSLATIONS[lang_code]
 
-lang_code = st.session_state.get("lang", "pt")
-t = TRANSLATIONS[lang_code]
+    ACCEPTED_TYPES = ["pdf", "docx", "xlsx", "txt", "png", "jpg", "jpeg"]
 
-# ==========================================
-# 2. UNIVERSEL TEKSTUDTRÆKNING &
+    def udtraek_tekst_fra_fil(fil):
+        tekst = ""
+        fil_navn = fil.name
+        fil_ext = fil_navn.split(".")[-1].lower()
+
+        try:
+            if fil_ext == "pdf":
+                with pdfplumber.open(fil) as pdf:
+                    for page in pdf.pages:
+                        tekst += (page.extract_text() or "") + "\n"
+            elif fil_ext == "docx":
+                doc = docx.Document(fil)
+                for p in doc.paragraphs:
+                    tekst += p.text + "\n"
+                for table in doc.tables:
+                    for row in table.rows:
+                        row_text = [cell.text.strip() for cell in row.cells]
+                        tekst += " | ".join(row_text) + "\n"
