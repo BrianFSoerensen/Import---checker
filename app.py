@@ -35,28 +35,16 @@ TRANSLATIONS = {
         "login_btn": "🚀 Entrar no Controle de Importação",
         "wrong_pass": "❌ Senha incorreta. Tente novamente.",
         "help_title": "💡 Como o aplicativo pode te ajudar?",
-        "help_text": """
-O aplicativo funciona como uma **ferramenta de comparação e cálculo inteligente**, garantindo que seus documentos de importação estejam livres de erros custosos e calculando os **custos nacionalizados com tributos brasileiros**.
-
-* 🔍 **Comparação de Documentos:** Compare cotações, faturas pro-forma, listas de embalagem e contratos.
-* 💰 **Cálculo de Nacionalização (Landed Cost):** Calcule o custo final em BRL incluindo II, IPI, PIS, COFINS, ICMS (Ceará) e frete/seguro.
-* 🇧🇷 **Controle Alfandegário (Pecém):** Verificação de NCM (8 dígitos), CNPJ e certificados (MAPA / ANVISA).
-* 💬 **Multiformato & Chat:** Lê PDF, Word, Excel, imagens (OCR) e e-mails/WhatsApp.
-""",
+        "help_text": "O aplicativo funciona como uma ferramenta de comparação e cálculo inteligente, garantindo que seus documentos de importação estejam livres de erros e calculando custos com tributos.",
         "instructions_title": "📋 Como usar o aplicativo:",
-        "instructions_text": """
-1. **Faça Login:** Digite a senha acima.
-2. **Envie ou Cole:** Envie documentos ou cole conversas de WhatsApp/E-mail.
-3. **Preencha os Dados:** Verifique a moeda (USD/EUR), taxa de câmbio, data e impostos.
-4. **Calcule a Nacionalização:** Obtenha o custo total landed no Brasil em BRL.
-""",
+        "instructions_text": "1. Faça Login. 2. Envie documentos ou cole textos. 3. Preencha os dados e taxas. 4. Execute a análise.",
         "notice": "ℹ️ *Nota: Arquivos e textos são usados exclusivamente para a comparação atual e não são salvos.*",
         "sec_docs": "📂 Documentos & Correspondência",
         "upload_label": "Upload de cotações, contratos ou imagens (PDF, Word, Excel, TXT, PNG, JPG)",
         "chat_paste_label": "💬 Copie e cole textos de e-mails, WhatsApp ou conversas aqui (Opcional):",
         "chat_paste_placeholder": "Exemplo:\n'O fornecedor confirmou no WhatsApp que o preço é €1.05/kg FOB e o frete marítimo é €2.500...'",
         "supplier_found": "Fornecedor identificado automaticamente:",
-        "currency_select_label": "Moeda Principal dos Documentos:",
+        "currency_select_label": "Moeda Principal dos Documents:",
         "tab1": "1️⃣ Oferta & Acordo Ativo",
         "tab2": "2️⃣ Comparação Pro-forma",
         "tab3": "3️⃣ Portos & Logística",
@@ -77,7 +65,7 @@ O aplicativo funciona como uma **ferramenta de comparação e cálculo inteligen
         "pod_label": "Porto de Destino (POD)",
         "etd_label": "Data Prevista de Saída (ETD)",
         "eta_label": "Data Prevista de Chegada (ETA)",
-        "upload_logistics": "Upload de documentos logísticos (B/L, Packing List, MAPA etc.)",
+        "upload_logistics": "Upload de documentos logísticos",
         "run_ai_btn": "🚀 Executar Comparação IA & Análise Completa",
         "no_docs_warn": "⚠️ Envie pelo menos um documento/imagem ou cole o texto do e-mail/chat.",
         "analyzing": "🤖 A IA está analisando os documentos e calculando...",
@@ -93,8 +81,6 @@ O aplicativo funciona como uma **ferramenta de comparação e cálculo inteligen
         "followup_caption": "Escreva perguntas sobre a análise ou adicione informações para atualizar.",
         "chat_placeholder": "Escreva suas dúvidas ou novas informações aqui...",
         "ai_lang_instruction": "Responda obrigatoriamente em PORTUGUÊS DO BRASIL.",
-        
-        # Nacionalização
         "nat_title": "🧮 Simulação de Custos de Nacionalização (Brasil / Pecém)",
         "nat_desc": "Defina a moeda, taxa de câmbio, data da cotação e alíquotas tributárias.",
         "weight_qty": "Quantidade Total (kg / caixas)",
@@ -120,21 +106,9 @@ O aplicativo funciona como uma **ferramenta de comparação e cálculo inteligen
         "login_btn": "🚀 Login to Import Control",
         "wrong_pass": "❌ Incorrect password. Please try again.",
         "help_title": "💡 How can this app help you?",
-        "help_text": """
-The app acts as an **intelligent comparison and calculation tool**, safeguarding your import documents against costly errors and calculating **landed costs with Brazilian taxes**.
-
-* 🔍 **Document Comparison:** Compare quotes, pro-forma invoices, packing lists, and contracts.
-* 💰 **Nationalization Calculation (Landed Cost):** Calculate final cost in BRL including II, IPI, PIS, COFINS, ICMS (Ceará), and freight/insurance.
-* 🇧🇷 **Customs Control (Pecém):** Automatic checks for 8-digit NCM codes, CNPJ, and certificates (MAPA / ANVISA).
-* 💬 **Multiformat & Chat:** Reads PDF, Word, Excel, images (OCR), and email/WhatsApp text.
-""",
+        "help_text": "The app acts as an intelligent comparison and calculation tool, safeguarding your import documents against costly errors and calculating landed costs.",
         "instructions_title": "📋 How to use the app:",
-        "instructions_text": """
-1. **Login:** Enter password above.
-2. **Upload or Paste:** Upload files or paste WhatsApp/Email text.
-3. **Fill Master Data:** Verify currency (USD/EUR), exchange rate, date, and tax rates.
-4. **Calculate Landed Cost:** Get the total nationalized cost in BRL.
-""",
+        "instructions_text": "1. Login. 2. Upload files or paste text. 3. Fill data and rates. 4. Run analysis.",
         "notice": "ℹ️ *Note: Files and text are used exclusively for current comparison and are not saved.*",
         "sec_docs": "📂 Documents & Correspondence",
         "upload_label": "Upload quotes, contracts, or images (PDF, Word, Excel, TXT, PNG, JPG)",
@@ -162,7 +136,7 @@ The app acts as an **intelligent comparison and calculation tool**, safeguarding
         "pod_label": "Port of Discharge (POD)",
         "etd_label": "Expected Departure Date (ETD)",
         "eta_label": "Expected Arrival Date (ETA)",
-        "upload_logistics": "Upload port and logistics documents (Bill of Lading, Packing List, MAPA cert, etc.)",
+        "upload_logistics": "Upload port and logistics documents",
         "run_ai_btn": "🚀 Run AI Comparison & Full Analysis",
         "no_docs_warn": "⚠️ Please upload at least one document/image or paste email/chat text.",
         "analyzing": "🤖 AI is analyzing documents and calculating...",
@@ -178,8 +152,6 @@ The app acts as an **intelligent comparison and calculation tool**, safeguarding
         "followup_caption": "Type questions about the analysis or add information to update.",
         "chat_placeholder": "Type your questions or new information here...",
         "ai_lang_instruction": "You MUST respond in ENGLISH.",
-        
-        # Nationalization
         "nat_title": "🧮 Nationalization Cost Simulation (Brazil / Pecém)",
         "nat_desc": "Set document currency, exchange rate, quote date, and tax parameters.",
         "weight_qty": "Total Quantity (kg / boxes)",
@@ -190,3 +162,282 @@ The app acts as an **intelligent comparison and calculation tool**, safeguarding
         "ii_rate": "Import Duty - II (%)",
         "ipi_rate": "IPI (%)",
         "pis_cofins_rate": "PIS + COFINS (%)",
+        "icms_rate": "ICMS Ceará (%)",
+        "cif_res": "CIF / Customs Value",
+        "tax_res": "Estimated Total Taxes",
+        "total_landed": "Total Nationalized Cost",
+        "unit_landed": "Final Cost per Unit/kg",
+        "fx_info_box": "📌 **Exchange Rate Base Used:** 1 {curr} = **R\$ {fx:.4f}** (Date: **{dt}**)"
+    },
+    "da": {
+        "title": "🇧🇷 Import- & Nationaliseringskontrol",
+        "subtitle": "Verifikationsværktøj og beregner af nationaliserede priser for Pecém, Ceará",
+        "login_header": "🔒 Begrænset Adgang",
+        "password_label": "Indtast adgangskode",
+        "login_btn": "🚀 Åbn Importkontrol",
+        "wrong_pass": "❌ Forkert adgangskode. Prøv igen.",
+        "help_title": "💡 Hvad kan appen hjælpe dig med?",
+        "help_text": "Appen fungerer som et intelligent sammenlignings- og beregningsværktøj, der sikrer importdokumenter mod fejl og beregner landed cost inklusiv afgifter.",
+        "instructions_title": "📋 Sådan bruger du appen:",
+        "instructions_text": "1. Log ind. 2. Upload dokumenter eller tekst. 3. Tjek valuta og satser. 4. Beregn.",
+        "notice": "ℹ️ *Bemærk: Filer og tekst bruges udelukkende til den aktuelle sammenligning og gemmes ikke.*",
+        "sec_docs": "📂 Dokumenter & Korrespondance",
+        "upload_label": "Upload tilbud, kontrakter eller bilag (PDF, Word, Excel, TXT, PNG, JPG)",
+        "chat_paste_label": "💬 Kopiér & indsæt tekst fra e-mails, WhatsApp eller chat her (Valgfrit):",
+        "chat_paste_placeholder": "Eksempel:\n'Leverandør har bekræftet på WhatsApp at prisen er €1.05/kg FOB og søfragten er €2.500...'",
+        "supplier_found": "Fandt leverandør automatisk:",
+        "currency_select_label": "Hovedvaluta i Dokumenter:",
+        "tab1": "1️⃣ Tilbud & Aktiv Aftale",
+        "tab2": "2️⃣ Pro-forma Sammenligning",
+        "tab3": "3️⃣ Havne & Logistik",
+        "tab4": "4️⃣ Landed Cost & Toldberegner 💰",
+        "supplier_input": "Producent / Leverandør",
+        "product_type": "Varetype",
+        "prod_fries": "Pomfritter (Fries)",
+        "prod_meat": "Kød (Meat)",
+        "prod_oil": "Olivenolie (Olive Oil)",
+        "prod_canned": "Tomat på dåse (Canned Tomatoes)",
+        "prod_other": "Andet",
+        "active_agreement": "Gældende Aftale",
+        "proforma_info": "Pro-forma Oplysninger",
+        "proforma_no": "Pro-forma Fakturanummer",
+        "proforma_amount": "FOB/EXW Vareværdi",
+        "upload_proforma": "Upload specifik pro-forma faktura",
+        "pol_label": "Afgangshavn (POL)",
+        "pod_label": "Ankomsthavn (POD)",
+        "etd_label": "Forventet Afgangsdato (ETD)",
+        "eta_label": "Forventet Ankomstdato (ETA)",
+        "upload_logistics": "Upload havne- og logistikdokumenter",
+        "run_ai_btn": "🚀 Kør AI Sammenligning & Samlet Analyse",
+        "no_docs_warn": "⚠️ Upload venligst mindst ét dokument/billede eller indsæt e-mail/chattekst.",
+        "analyzing": "🤖 AI'en analyserer dokumenter og beregner afgifter...",
+        "results_header": "📊 Analyseresultat",
+        "approved": "🟢 GODKENDT:",
+        "discrepancies_found": "🔴 OBS / AFVIGELSER FUNDET:",
+        "approved_points": "✅ Godkendte Punkter",
+        "warnings_points": "⚠️ Mangler & Tjekpunkter",
+        "detailed_discrepancies": "🚨 Detaljerede Afvigelser",
+        "no_approved": "Ingen registrerede godkendte punkter.",
+        "no_warnings": "Ingen mangler fundet.",
+        "followup_title": "💬 Spørg eller opdater analysen",
+        "followup_caption": "Skriv spørgsmål til analysen eller tilføj oplysninger for at genberegne.",
+        "chat_placeholder": "Skriv spørgsmål eller yderligere oplysninger her...",
+        "ai_lang_instruction": "Du SKAL svare på DANSK.",
+        "nat_title": "🧮 Nationaliseringsberegner (Brasilien / Pecém)",
+        "nat_desc": "Angiv dokumentvaluta, valutakurs, dato for kursen og skattesatser.",
+        "weight_qty": "Samlet Mængde (kg / kasser)",
+        "freight_cost": "International Fragt",
+        "insurance_cost": "International Forsikring",
+        "exchange_rate": "Valutakurs (1 {curr} = X BRL)",
+        "fx_date": "Dato for Valutakurs",
+        "ii_rate": "Importafgift - II (%)",
+        "ipi_rate": "IPI (%)",
+        "pis_cofins_rate": "PIS + COFINS (%)",
+        "icms_rate": "ICMS Ceará (%)",
+        "cif_res": "CIF / Toldværdi",
+        "tax_res": "Estimerede Samlede Skatter",
+        "total_landed": "Samlet Nationaliseret Pris",
+        "unit_landed": "Endelig Pris pr. Enhed/kg",
+        "fx_info_box": "📌 **Anvendt Valutakurs:** 1 {curr} = **R\$ {fx:.4f}** (Dato: **{dt}**)"
+    }
+}
+
+# ==========================================
+# 1. SPROG- OG SESSION-INITIALISERING
+# ==========================================
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "pt"
+
+if "password_correct" not in st.session_state:
+    st.session_state["password_correct"] = False
+
+# ==========================================
+# 2. LOGIN / VELKOMSTSKÆRM ELLER HOVEDAPP
+# ==========================================
+if not st.session_state["password_correct"]:
+    col1, col2, col3 = st.columns([1, 3, 1])
+    with col2:
+        selected_lang_code = st.selectbox(
+            "🌐 Idioma / Language / Sprog:",
+            options=["pt", "en", "da"],
+            format_func=lambda x: "🇧🇷 Português (Brasil)" if x == "pt" else ("🇬🇧 English" if x == "en" else "🇩🇰 Dansk"),
+            index=["pt", "en", "da"].index(st.session_state["lang"])
+        )
+        st.session_state["lang"] = selected_lang_code
+        t = TRANSLATIONS[selected_lang_code]
+
+        st.markdown(f"# {t['title']}")
+        st.caption(t['subtitle'])
+        st.markdown("---")
+
+        st.markdown(f"### {t['login_header']}")
+        password_input = st.text_input(t['password_label'], type="password")
+        
+        if st.button(t['login_btn'], type="primary", use_container_width=True):
+            if password_input == "brasilien2026":
+                st.session_state["password_correct"] = True
+                st.rerun()
+            else:
+                st.error(t['wrong_pass'])
+
+        st.markdown("---")
+        st.markdown(f"### {t['help_title']}")
+        st.markdown(t['help_text'])
+        st.markdown("---")
+        st.markdown(f"### {t['instructions_title']}")
+        st.markdown(t['instructions_text'])
+
+else:
+    # ------------------------------------------
+    # HOVEDAPPLIKATION (NÅR LOGGET IND)
+    # ------------------------------------------
+    lang_code = st.session_state["lang"]
+    t = TRANSLATIONS[lang_code]
+
+    ACCEPTED_TYPES = ["pdf", "docx", "xlsx", "txt", "png", "jpg", "jpeg"]
+
+    def udtraek_tekst_fra_fil(fil):
+        tekst = ""
+        fil_navn = fil.name
+        fil_ext = fil_navn.split(".")[-1].lower()
+
+        try:
+            if fil_ext == "pdf":
+                with pdfplumber.open(fil) as pdf:
+                    for page in pdf.pages:
+                        tekst += (page.extract_text() or "") + "\n"
+            elif fil_ext == "docx":
+                doc = docx.Document(fil)
+                for p in doc.paragraphs:
+                    tekst += p.text + "\n"
+                for table in doc.tables:
+                    for row in table.rows:
+                        row_text = [cell.text.strip() for cell in row.cells]
+                        tekst += " | ".join(row_text) + "\n"
+            elif fil_ext == "xlsx":
+                wb = openpyxl.load_workbook(fil, data_only=True)
+                for sheet in wb.sheetnames:
+                    ws = wb[sheet]
+                    tekst += f"\n--- Sheet: {sheet} ---\n"
+                    for row in ws.iter_rows(values_only=True):
+                        row_vals = [str(val) if val is not None else "" for val in row]
+                        if any(row_vals):
+                            tekst += " | ".join(row_vals) + "\n"
+            elif fil_ext == "txt":
+                tekst = fil.read().decode("utf-8", errors="ignore")
+            elif fil_ext in ["png", "jpg", "jpeg"]:
+                image = Image.open(fil)
+                reader = get_ocr_reader()
+                image_bytes = io.BytesIO()
+                image.save(image_bytes, format=image.format or 'PNG')
+                ocr_result = reader.readtext(image_bytes.getvalue(), detail=0)
+                tekst = "\n".join(ocr_result)
+        except Exception as e:
+            st.warning(f"⚠️ Error extracting text from '{fil_navn}': {e}")
+
+        return tekst
+
+    # OpenAI Klient
+    try:
+        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
+    except Exception:
+        st.error("⚠️ OPENAI_API_KEY not found in Streamlit Secrets.")
+
+    col_title, col_lang = st.columns([3, 1])
+
+    with col_lang:
+        selected_lang_code = st.selectbox(
+            "🌐 Language / Idioma:",
+            options=["pt", "en", "da"],
+            format_func=lambda x: "🇧🇷 Português (Brasil)" if x == "pt" else ("🇬🇧 English" if x == "en" else "🇩🇰 Dansk"),
+            index=["pt", "en", "da"].index(lang_code)
+        )
+        if selected_lang_code != lang_code:
+            st.session_state["lang"] = selected_lang_code
+            st.rerun()
+
+    with col_title:
+        st.title(t["title"])
+        st.caption(t["notice"])
+
+    st.markdown("---")
+
+    st.markdown(f"### {t['sec_docs']}")
+    col_upload, col_text = st.columns([1, 1])
+
+    with col_upload:
+        uploadede_filer = st.file_uploader(
+            t['upload_label'], 
+            type=ACCEPTED_TYPES,
+            accept_multiple_files=True
+        )
+
+    with col_text:
+        mail_og_chat_tekst = st.text_area(
+            t['chat_paste_label'],
+            placeholder=t['chat_paste_placeholder'],
+            height=135
+        )
+
+    udlaest_leverandoer = ""
+    samlet_pdf_tekst = ""
+
+    if mail_og_chat_tekst.strip():
+        samlet_pdf_tekst += f"\n--- Mail / Chat Correspondence ---\n{mail_og_chat_tekst}\n"
+
+    if uploadede_filer:
+        st.info(f"📁 {len(uploadede_filer)} document(s) attached.")
+        with st.spinner("Analyzing..."):
+            for fil in uploadede_filer:
+                udtrukket = udtraek_tekst_fra_fil(fil)
+                samlet_pdf_tekst += f"\n--- Document ({fil.name}) ---\n" + udtrukket
+                if not udlaest_leverandoer:
+                    match = re.search(r"(?:Leverandør|Exporter|Producent|Supplier|Fornecedor):\s*(.+)", udtrukket, re.IGNORECASE)
+                    if match:
+                        udlaest_leverandoer = match.group(1).strip()
+                    
+        if udlaest_leverandoer:
+            st.success(f"{t['supplier_found']} **{udlaest_leverandoer}**")
+
+    # Automatisk valutadetektion fra tekst (eller manuel overstyring)
+    detected_currency = "EUR" if "EUR" in samlet_pdf_tekst or "€" in samlet_pdf_tekst else ("USD" if "USD" in samlet_pdf_tekst or "\$" in samlet_pdf_tekst else "EUR")
+
+    col_curr_select, col_space = st.columns([1, 2])
+    with col_curr_select:
+        valgt_valuta = st.selectbox(
+            t["currency_select_label"],
+            options=["EUR", "USD"],
+            index=0 if detected_currency == "EUR" else 1,
+            help="Vælg om dokumentpriser er angivet i EUR eller USD."
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # Opdeling i 4 faner (Inkl. Nacionalização)
+    tab1, tab2, tab3, tab4 = st.tabs([
+        t["tab1"], 
+        t["tab2"], 
+        t["tab3"],
+        t["tab4"]
+    ])
+
+    with tab1:
+        st.header(t["tab1"])
+        col1, col2 = st.columns(2)
+        with col1:
+            producent = st.text_input(t["supplier_input"], value=udlaest_leverandoer)
+        with col2:
+            vare_type = st.selectbox(t["product_type"], [t["prod_fries"], t["prod_meat"], t["prod_oil"], t["prod_canned"], t["prod_other"]])
+
+    with tab2:
+        st.header(t["tab2"])
+        col1, col2 = st.columns(2)
+        with col1:
+            st.markdown(f"### 📋 {t['active_agreement']}")
+            st.write(f"**{t['supplier_input']}:** {producent if producent else '-'}")
+            st.write(f"**{t['product_type']}:** {vare_type}")
+            st.write(f"**Moeda / Valuta:** {valgt_valuta}")
+        with col2:
+            st.markdown(f"### 📄 {t['proforma_info']}")
+            proforma_no = st.text_input(t["proforma_no"])
+            proforma_beloeb = st.number_input(f"{t['proforma_amount']} ({valgt_valuta})", min_value=0.0, step=1
